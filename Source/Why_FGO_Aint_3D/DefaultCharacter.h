@@ -12,7 +12,11 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputMappingContext.h"
 #include "Public/TutorialStuff/Tutorial_PlayerInterface.h"
+#include "TutorialStuff/HealthComponent.h"
 #include "DefaultCharacter.generated.h"
+
+class USphereComponent;
+class UFloatingPawnMovement;
 
 UCLASS()
 class WHY_FGO_AINT_3D_API ADefaultCharacter : public ACharacter, public ITutorial_PlayerInterface
@@ -25,10 +29,15 @@ class WHY_FGO_AINT_3D_API ADefaultCharacter : public ACharacter, public ITutoria
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess="true"))
 	class USpringArmComponent* SpringArm;
+
 	
+	 
 public:
 	// Sets default values for this character's properties
 	ADefaultCharacter();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UHealthComponent> HealthComponent;
 
 protected:
 	// Called when the game starts or when spawned
@@ -42,11 +51,11 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void SetActorOverlap_Implementation(AActor* OverlappedActor) override;
-
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly);
-	TObjectPtr<AActor> OverlappedActorRef;
 	
 protected:
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Variables From C++");
+	TObjectPtr<AActor> OverlappedActorRef;
 	
 	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
 	class UInputMappingContext* InputMapping;

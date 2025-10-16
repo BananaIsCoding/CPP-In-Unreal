@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "DefaultCharacter.h"
 
+#include "Components/SphereComponent.h"
+
 // Sets default values
 ADefaultCharacter::ADefaultCharacter()
 {
@@ -18,6 +20,8 @@ ADefaultCharacter::ADefaultCharacter()
 
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
+
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
 // Called when the game starts or when spawned
