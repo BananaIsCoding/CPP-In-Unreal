@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "DefaultCharacter.h"
 
-#include "Components/SphereComponent.h"
+#include "Components/AudioComponent.h"
 
 // Sets default values
 ADefaultCharacter::ADefaultCharacter()
@@ -21,6 +21,10 @@ ADefaultCharacter::ADefaultCharacter()
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 
+	AudioComponent = CreateDefaultSubobject<UAudioComponent>("AudioComponent");
+	AudioComponent->SetupAttachment(SpringArm);
+	AudioComponent->SetAutoActivate(false);
+	
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
@@ -63,6 +67,18 @@ void ADefaultCharacter::SetActorOverlap_Implementation(AActor* OverlappedActor)
 	ITutorial_PlayerInterface::SetActorOverlap_Implementation(OverlappedActor);
 
 	OverlappedActorRef = OverlappedActor;
+}
+
+void ADefaultCharacter::MovementEffects_Implementation()
+{
+	if (!AudioComponent->IsPlaying())
+	{
+		AudioComponent->Play();
+	}
+	else
+	{
+		AudioComponent->StopDelayed(0.1f);
+	}
 }
 
 void ADefaultCharacter::MoveFunction(const FInputActionValue& InputValue)
