@@ -60,6 +60,7 @@ void ADefaultCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		Input->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADefaultCharacter::MoveFunction);
 		Input->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADefaultCharacter::LookFunction);
 		Input->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ADefaultCharacter::JumpFunction);
+		Input->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ADefaultCharacter::AttackFunction_Implementation);
 	}
 }
 
@@ -112,6 +113,12 @@ void ADefaultCharacter::LookFunction(const FInputActionValue& InputValue)
 void ADefaultCharacter::JumpFunction()
 {
 	ACharacter::Jump();
+}
+
+void ADefaultCharacter::AttackFunction_Implementation()
+{
+	UE_LOG(LogTemp, Log, TEXT("Attack!!!"));
+	AttackFunction();
 }
 
 

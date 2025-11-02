@@ -71,8 +71,12 @@ protected:
 	class UInputAction* JumpAction;
 	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
 	class UInputAction* LookAction;
+	UPROPERTY(EditAnywhere, Category = "EnhancedInput")
+	class UInputAction* AttackAction;
 
 	void MoveFunction(const FInputActionValue& InputValue);
 	void LookFunction(const FInputActionValue& InputValue);
 	void JumpFunction();
+	UFUNCTION(BlueprintNativeEvent)
+	void AttackFunction();
 };
