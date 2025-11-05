@@ -29,10 +29,10 @@ public:
 	UFUNCTION()
 	void OnDamaged(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Health")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Health")
 	float MaxHealth = 100.0f;
 
-	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Health")
+	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Health")
 	float CurrentHealth = 0.0f;
 
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
