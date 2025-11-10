@@ -6,12 +6,12 @@
 #include "GameFramework/Character.h"
 #include "Why_FGO_Aint_3D/MyGameStuff/Structs/InfoStruct.h"
 #include "EnemyWalkPointCpp.h"
-#include "Why_FGO_Aint_3D/MyGameStuff/DefaultStageGamemodeV2.h"
 #include "AIController.h"
 #include "BaseEnemyCpp.generated.h"
 
 //class UPawnSensingComponent;
 class UBoxComponent;
+class ADefaultStageGamemodeV2;
 UCLASS()
 class WHY_FGO_AINT_3D_API ABaseEnemyCpp : public ACharacter
 {
@@ -24,15 +24,13 @@ public:
 protected:
 
 	//class UPawnSensingComponent* PawnSensingComponent;
-	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess="true"))
-	class UBoxComponent* AttackHitBox;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UBoxComponent> AttackHitBox;
 
 	UPROPERTY(EditAnywhere, Category = "Adjustable Variables")
 	float ChaseSpeed = 450.0f;
 	
-	AAIController* AIController;
-	
-	FInfoStruct EnemyInfo;
+	//AAIController* AIController;
 
 	bool IsPlayerDetected;
 
@@ -52,13 +50,29 @@ protected:
 
 	void PathFollowState();
 
-	void OnPathFollowFinished(FAIRequestID RequestID, EPathFollowingResult::Type Result);
-
 	void ChasePlayerState();
 
 	UFUNCTION(BlueprintCallable)
 	void OnSeePlayer();
 
-public:
+	UFUNCTION()
+	void OnHitBoxHit
+	(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult &SweepResult
+	);
 	
+	UFUNCTION(BlueprintCallable)
+	void OnHitBoxHitForBP(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	                      int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+public:
+	void OnPathFollowFinished();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Adjustable Variables")
+	FInfoStruct EnemyInfo;
 };

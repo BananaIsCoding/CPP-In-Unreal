@@ -7,6 +7,7 @@
 #include "BattleZoneCpp.generated.h"
 
 class USphereComponent;
+class ADefaultStageGamemodeV2;
 
 UCLASS()
 
@@ -17,6 +18,8 @@ class WHY_FGO_AINT_3D_API ABattleZoneCpp : public AActor
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> SphereCollider;
 
+	ADefaultStageGamemodeV2* DefaultStageGamemode;
+
 public:
 	// Sets default values for this actor's properties
 	ABattleZoneCpp();
@@ -25,10 +28,20 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	void StartIntro();
+	
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	//UFUNCTION()
 	//void OnComponentOverlay(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	UFUNCTION()
+	void OnHitBoxOverlay
+	(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult &SweepResult
+	);
 };

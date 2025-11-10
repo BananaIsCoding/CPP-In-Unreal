@@ -2,6 +2,7 @@
 
 
 #include "BattleZoneCpp.h"
+#include "DefaultStageGamemodeV2.h"
 #include "Components/SphereComponent.h"
 
 // Sets default values
@@ -11,21 +12,29 @@ ABattleZoneCpp::ABattleZoneCpp()
 	PrimaryActorTick.bCanEverTick = true;
 
 	SphereCollider = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-	SphereCollider->SetCollisionProfileName("OverlapAllDynamic");
+	SphereCollider->SetCollisionProfileName("OnlyDetectEnemy");
 	SphereCollider->SetSphereRadius(3000.0f);
-	
+	SphereCollider->OnComponentBeginOverlap.AddUniqueDynamic(this, &ABattleZoneCpp::OnHitBoxOverlay);
 }
 
 // Called when the game starts or when spawned
 void ABattleZoneCpp::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	DefaultStageGamemode = (ADefaultStageGamemodeV2*) GetWorld()->GetAuthGameMode();
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ABattleZoneCpp::StartIntro, 1.0f, false);
 }
 
-// Called every frame
-void ABattleZoneCpp::Tick(float DeltaTime)
+void ABattleZoneCpp::StartIntro()
 {
-	Super::Tick(DeltaTime);
+	DefaultStageGamemode->PreBattleIntro();
+}
+
+void ABattleZoneCpp::OnHitBoxOverlay(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	ABaseEnemyCpp* Enemy = Cast<ABaseEnemyCpp>(OtherActor);
+	DefaultStageGamemode->AddEnemyToBattle(Enemy);
 }
 

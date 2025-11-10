@@ -2,11 +2,12 @@
 
 
 #include "BaseEnemyCpp.h"
-
+#include "Why_FGO_Aint_3D/MyGameStuff/DefaultStageGamemodeV2.h"
+#include "MyEnemyAiController.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Perception/PawnSensingComponent.h"
-//#include ""
+#include "Why_FGO_Aint_3D/DefaultCharacter.h"
+//#include "Perception/PawnSensingComponent.h"
 
 
 // Sets default values
@@ -16,9 +17,11 @@ ABaseEnemyCpp::ABaseEnemyCpp()
 	PrimaryActorTick.bCanEverTick = true;
 
 	//AIController = CreateDefaultSubobject<AAIController>(TEXT("AIController"));
-	AIController = GetController<AAIController>();
 
 	AttackHitBox = CreateDefaultSubobject<UBoxComponent>("HitBox");
+	AttackHitBox->SetCollisionProfileName("OverlapAll");
+	AttackHitBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ABaseEnemyCpp::OnHitBoxHit);
+	
 }
 
 // Called when the game starts or when spawned
@@ -36,6 +39,8 @@ void ABaseEnemyCpp::BeginPlay()
 	{
 		PathFollowState();
 	}
+
+	
 }
 
 void ABaseEnemyCpp::SetRandomClass()
@@ -74,28 +79,31 @@ void ABaseEnemyCpp::PathFollowState()
 	if (!IsPlayerDetected)
 	{
 		AActor* point = PathPointArray[CurrentPathPoint];
-		AIController->MoveToActor(point,5.0f,false);
-		//AIController->ReceiveMoveCompleted.AddDynamic(this, &ABaseEnemyCpp::OnPathFollowFinished);
+		GetController<AMyEnemyAiController>()->MoveToActor(point,5.0f,false);
+		//AIController->MoveToActor(point,5.0f,false);
+		//GetController<AAIController>()->ReceiveMoveCompleted.AddDynamic(this, &ABaseEnemyCpp::OnPathFollowFinished);
 	}
 }
 
-void ABaseEnemyCpp::OnPathFollowFinished(FAIRequestID RequestID, EPathFollowingResult::Type Result)
+void ABaseEnemyCpp::OnPathFollowFinished()
 {
-	if (CurrentPathPoint < PathPointArray.Num() - 1)
+	if (!IsPlayerDetected)
 	{
-		CurrentPathPoint++;
+		if (CurrentPathPoint < PathPointArray.Num() - 1)
+		{
+			CurrentPathPoint++;
+		}
+		else
+		{
+			CurrentPathPoint = 0;
+		}
+		PathFollowState();
 	}
-	else
-	{
-		CurrentPathPoint = 0;
-	}
-	PathFollowState();
 }
 
 void ABaseEnemyCpp::ChasePlayerState()
 {
-	AIController->MoveToActor(GetWorld()->GetFirstPlayerController()->GetCharacter(),5.0f,false);
-	
+	GetController<AAIController>()->MoveToActor(GetWorld()->GetFirstPlayerController()->GetCharacter(),5.0f,false);
 }
 
 void ABaseEnemyCpp::OnSeePlayer()
@@ -105,6 +113,24 @@ void ABaseEnemyCpp::OnSeePlayer()
 	GetWorld()->GetTimerManager().SetTimer(LookTimerHandler, this, &ABaseEnemyCpp::ChasePlayerState, 0.2f, true);
 }
 
+void ABaseEnemyCpp::OnHitBoxHit(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if ( Cast<ADefaultCharacter>( OtherActor))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Hit"));
+	}
+}
+
+void ABaseEnemyCpp::OnHitBoxHitForBP(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if ( Cast<ADefaultCharacter>( OtherActor))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Hit"));
+		DefaultStageGamemode->BattleSetUp(GetTransform());
+	}
+}
 
 
 
