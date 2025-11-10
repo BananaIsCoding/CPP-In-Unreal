@@ -75,7 +75,7 @@ void ABaseEnemyCpp::PathFollowState()
 	{
 		AActor* point = PathPointArray[CurrentPathPoint];
 		AIController->MoveToActor(point,5.0f,false);
-		AIController->ReceiveMoveCompleted.AddDynamic(this, &ABaseEnemyCpp::OnPathFollowFinished);
+		//AIController->ReceiveMoveCompleted.AddDynamic(this, &ABaseEnemyCpp::OnPathFollowFinished);
 	}
 }
 
@@ -94,7 +94,7 @@ void ABaseEnemyCpp::OnPathFollowFinished(FAIRequestID RequestID, EPathFollowingR
 
 void ABaseEnemyCpp::ChasePlayerState()
 {
-	
+	AIController->MoveToActor(GetWorld()->GetFirstPlayerController()->GetCharacter(),5.0f,false);
 	
 }
 

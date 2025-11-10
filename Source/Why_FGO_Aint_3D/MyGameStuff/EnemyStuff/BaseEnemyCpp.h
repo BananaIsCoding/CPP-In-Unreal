@@ -56,6 +56,7 @@ protected:
 
 	void ChasePlayerState();
 
+	UFUNCTION(BlueprintCallable)
 	void OnSeePlayer();
 
 public:
