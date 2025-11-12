@@ -19,6 +19,9 @@ public:
 protected:
 
 	UPROPERTY(EditAnywhere)
+	TObjectPtr<USceneComponent> SceneComponent;
+	
+	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> StartPoint;
 	
 	UPROPERTY(EditAnywhere)
@@ -27,7 +30,13 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UCameraComponent> Camera;
 
+	FTimerHandle MoveCameraTimerHandler;
+
+	void StartMovingCamera();
+
+	void MoveCamera();
+
 public:
-	void StartTheCutscene(float travelDistance);
+	void StartTheCutscene(float TravelDistance);
 	
 };

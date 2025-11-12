@@ -9,6 +9,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "DefaultStageGamemodeV2.generated.h"
 
+struct FCardPoolItem;
+class ADefaultPlayerBattleModeCpp;
 class AIntroCameraCpp;
 /**
  * 
@@ -20,7 +22,23 @@ class WHY_FGO_AINT_3D_API ADefaultStageGamemodeV2 : public AGameModeBase
 	ADefaultStageGamemodeV2();
 
 protected:
+
 	FTransform EngagePos;
+
+	TArray<ABaseEnemyCpp*> EnemiesToAdd;
+
+	TArray<ABaseBattleEnemyCpp*> EnemiesArray;
+
+	//TArray<TSubclassOf<ADefaultPlayerBattleModeCpp>*> PartyArray;
+	TArray<ADefaultPlayerBattleModeCpp*> PartyArray;
+
+	ADefaultPlayerBattleModeCpp* CurrentPossessedChar;
+
+	TArray<FCardPoolItem> CardPool;
+
+	float PosOffset;
+
+	ABattleZoneCpp* BattleZoneBp;
 
 	void CalcOffset(int ArrayLen);
 
@@ -28,16 +46,11 @@ protected:
 	
 	void SetUpIntroCamera(FRotator Rotation, float XSpawnOffset, int Index);
 	
+	virtual void BeginPlay() override;
+
 	void IntroEnemy();
-	
 
-	TArray<ABaseEnemyCpp*> EnemiesToAdd;
-
-	TArray<ABaseBattleEnemyCpp*> EnemiesArray;
-
-	float PosOffset;
-
-	ABattleZoneCpp* BattleZoneBp;
+	void IntroPlayer();
 	
 public:
 	void BattleSetUp(FTransform BattleStartPos);
@@ -53,5 +66,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Stuff For Designers")
 	int SpawnSpacing = 200;
 	
-	
+	UPROPERTY(EditAnywhere, Category = "Stuff For Designers")
+	float IntroCutsceneMultiplier = 2.0f;
 };

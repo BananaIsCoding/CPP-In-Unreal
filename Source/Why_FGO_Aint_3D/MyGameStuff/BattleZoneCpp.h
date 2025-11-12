@@ -15,6 +15,9 @@ class WHY_FGO_AINT_3D_API ABattleZoneCpp : public AActor
 {
 	GENERATED_BODY()
 
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USceneComponent> SceneComponent;
+	
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USphereComponent> SphereCollider;
 

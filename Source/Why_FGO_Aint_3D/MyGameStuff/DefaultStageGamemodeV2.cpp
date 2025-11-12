@@ -2,7 +2,11 @@
 
 
 #include "DefaultStageGamemodeV2.h"
-#include  "IntroCameraCpp.h"
+
+#include "DefaultPlayerBattleModeCpp.h"
+#include "FgoDefaultGameInstance.h"
+#include "IntroCameraCpp.h"
+#include "Structs/CardPoolItem.h"
 
 ADefaultStageGamemodeV2::ADefaultStageGamemodeV2()
 {
@@ -22,12 +26,12 @@ void ADefaultStageGamemodeV2::CalcOffset(int ArrayLen)
 			PosOffset += SpawnSpacing / 2;
 		}
 	}
+	//UE_LOG(LogTemp, Log, TEXT("Example text that prints a float: %f"), PosOffset);
 }
 
 FTransform ADefaultStageGamemodeV2::GetSpawnPosition(FRotator Rotation, float XSpawnOffset, int Index)
 {
-	FVector BattleZoneLocation = BattleZoneBp->GetActorLocation();
-	FVector NewLocation = FVector(BattleZoneLocation.X + XSpawnOffset,(SpawnSpacing * Index) + XSpawnOffset + BattleZoneLocation.Y, BattleZoneLocation.Z);
+	FVector NewLocation = FVector(EngagePos.GetLocation().X + XSpawnOffset,(SpawnSpacing * Index) + PosOffset + EngagePos.GetLocation().Y, EngagePos.GetLocation().Z);
 
 	return FTransform(Rotation.Quaternion(), NewLocation, FVector::One());
 }
@@ -35,14 +39,59 @@ FTransform ADefaultStageGamemodeV2::GetSpawnPosition(FRotator Rotation, float XS
 void ADefaultStageGamemodeV2::SetUpIntroCamera(FRotator Rotation, float XSpawnOffset, int Index)
 {
 	FActorSpawnParameters SpawnParameters;
-	FVector BattleZoneLocation = BattleZoneBp->GetActorLocation();
-	FTransform CamSpawnTransform = FTransform(Rotation, FVector(BattleZoneLocation.X + XSpawnOffset, BattleZoneLocation.Y, BattleZoneLocation.Z));
-	AIntroCameraCpp* cam =
-		Cast<AIntroCameraCpp>(
-			GetWorld()->SpawnActor(IntroCamClass, &CamSpawnTransform, SpawnParameters)
-		);
 	
-}	
+	FTransform CamSpawnTransform = FTransform(Rotation, FVector(EngagePos.GetLocation().X + XSpawnOffset, EngagePos.GetLocation().Y, EngagePos.GetLocation().Z));
+	Cast<AIntroCameraCpp>(
+		GetWorld()->SpawnActor(IntroCamClass, &CamSpawnTransform, SpawnParameters)
+	)->StartTheCutscene((SpawnSpacing * Index) + 100.0f );
+	
+}
+
+void ADefaultStageGamemodeV2::BeginPlay()
+{
+	Super::BeginPlay();
+
+	FActorSpawnParameters SpawnParameters;
+	FTransform SpawnTransform = FTransform::Identity;
+	
+	int PlayerIndex = 0;
+	/*
+	for (ADefaultPlayerBattleModeCpp* CharBP : Cast<UFgoDefaultGameInstance>(GetWorld()->GetGameInstance())->PartyCharRefArray)
+	{
+		//TSubclassOf<ADefaultPlayerBattleModeCpp> character =  GetWorld()->SpawnActor<CharBP>;
+		ADefaultPlayerBattleModeCpp Character = Cast<ADefaultPlayerBattleModeCpp> (GetWorld()->SpawnActor(CharBP, &SpawnTransform, SpawnParameters));
+		Character.SetActorHiddenInGame(true);
+		PartyArray.Add(&Character);
+
+		for(int i = 0; i < 4; i++)
+		{
+			FCardPoolItem Item = {PlayerIndex, i};
+			CardPool.Add(Item);
+		}
+		PlayerIndex++;
+	}
+	*/
+
+	
+	 for (TSubclassOf<ADefaultPlayerBattleModeCpp> CharBP : Cast<UFgoDefaultGameInstance>(GetWorld()->GetGameInstance())->PartyCharRefArray)
+	{
+		/*
+		ADefaultPlayerBattleModeCpp* Character =  GetWorld()->SpawnActor<CharBP>;
+	 	Character->SetActorHiddenInGame(true);
+	 	PartyArray.Add(Character);
+	 	*/
+	 	
+	 	for(int i = 0; i < 4; i++)
+	 	{
+	 		FCardPoolItem Item = {PlayerIndex, i};
+	 		CardPool.Add(Item);
+	 	}
+	 	PlayerIndex++;
+	}
+	
+
+	
+}
 
 void ADefaultStageGamemodeV2::AddEnemyToBattle(ABaseEnemyCpp* EnemyToAdd)
 {
@@ -72,8 +121,28 @@ void ADefaultStageGamemodeV2::IntroEnemy()
 		EnemiesArray.Add(NewBattleEnemy);
 		Index += 1;
 	}
-
 	
+	SetUpIntroCamera(FRotator::ZeroRotator, 200.0f, TempArray.Num());
+	TempArray.Empty();
+}
+
+void ADefaultStageGamemodeV2::IntroPlayer()
+{
+	GetWorld()->GetFirstPlayerController()->GetCharacter()->Destroy();
+	CalcOffset(PartyArray.Num());
+
+	int Index = 0;
+	for (ADefaultPlayerBattleModeCpp* Character : PartyArray)
+	{
+		Character->SetActorHiddenInGame(false);
+		FTransform SpawnTransform = GetSpawnPosition(FRotator::ZeroRotator,-500.0f, Index);
+		Character->SetActorTransform(SpawnTransform);
+		Index++;
+	}
+
+	SetUpIntroCamera(FRotator(0, 0, 180), -200.0f, PartyArray.Num());
+
+	CurrentPossessedChar = PartyArray[0];
 }
 
 void ADefaultStageGamemodeV2::BattleSetUp(FTransform BattleStartPos)
@@ -86,4 +155,9 @@ void ADefaultStageGamemodeV2::BattleSetUp(FTransform BattleStartPos)
 void ADefaultStageGamemodeV2::PreBattleIntro()
 {
 	IntroEnemy();
+
+	FTimerHandle TimerHandle;
+	float WaitTime = EnemiesToAdd.Num() * IntroCutsceneMultiplier;
+	//WaitTime = 0.1f;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::IntroPlayer, WaitTime, false);
 }

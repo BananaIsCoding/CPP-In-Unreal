@@ -11,10 +11,14 @@ ABattleZoneCpp::ABattleZoneCpp()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootScene"));
+	RootComponent = SceneComponent;
+
 	SphereCollider = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
 	SphereCollider->SetCollisionProfileName("OnlyDetectEnemy");
 	SphereCollider->SetSphereRadius(3000.0f);
 	SphereCollider->OnComponentBeginOverlap.AddUniqueDynamic(this, &ABattleZoneCpp::OnHitBoxOverlay);
+	SphereCollider->SetupAttachment(RootComponent);
 }
 
 // Called when the game starts or when spawned
