@@ -12,6 +12,7 @@
 //class UPawnSensingComponent;
 class UBoxComponent;
 class ADefaultStageGamemodeV2;
+class ABaseBattleEnemyCpp;
 UCLASS()
 class WHY_FGO_AINT_3D_API ABaseEnemyCpp : public ACharacter
 {
@@ -73,6 +74,9 @@ protected:
 public:
 	void OnPathFollowFinished();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Adjustable Variables")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stuff For Designers")
 	FInfoStruct EnemyInfo;
+
+	UPROPERTY(EditAnywhere, Category = "Stuff For Designers")
+	TSubclassOf<ABaseBattleEnemyCpp> BattleEnemyClass;
 };

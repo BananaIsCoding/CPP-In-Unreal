@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BattleZoneCpp.h"
+#include "EnemyStuff/BaseBattleEnemyCpp.h"
 #include "EnemyStuff/BaseEnemyCpp.h"
 #include "GameFramework/GameModeBase.h"
 #include "DefaultStageGamemodeV2.generated.h"
@@ -20,15 +21,19 @@ class WHY_FGO_AINT_3D_API ADefaultStageGamemodeV2 : public AGameModeBase
 protected:
 	FTransform EngagePos;
 
+	void CalcOffset(int ArrayLen);
 
+	FTransform GetSpawnPosition(FRotator Rotation, float XSpawnOffset, int Index);
+	
 	void IntroEnemy();
 
-	void CalcOffset(int ArrayLen);
-	
 	TArray<ABaseEnemyCpp*> EnemiesToAdd;
+
+	TArray<ABaseBattleEnemyCpp*> EnemiesArray;
 
 	float PosOffset;
 
+	ABattleZoneCpp* BattleZoneBp;
 
 public:
 	void BattleSetUp(FTransform BattleStartPos);
