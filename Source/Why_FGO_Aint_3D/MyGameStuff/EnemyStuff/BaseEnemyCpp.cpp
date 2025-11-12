@@ -19,6 +19,7 @@ ABaseEnemyCpp::ABaseEnemyCpp()
 	//AIController = CreateDefaultSubobject<AAIController>(TEXT("AIController"));
 
 	AttackHitBox = CreateDefaultSubobject<UBoxComponent>("HitBox");
+	AttackHitBox->SetupAttachment(RootComponent);
 	AttackHitBox->SetCollisionProfileName("OverlapAll");
 	AttackHitBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ABaseEnemyCpp::OnHitBoxHit);
 	
@@ -119,6 +120,7 @@ void ABaseEnemyCpp::OnHitBoxHit(UPrimitiveComponent* OverlappedComponent, AActor
 	if ( Cast<ADefaultCharacter>( OtherActor))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Hit"));
+		DefaultStageGamemode->BattleSetUp(GetTransform());
 	}
 }
 

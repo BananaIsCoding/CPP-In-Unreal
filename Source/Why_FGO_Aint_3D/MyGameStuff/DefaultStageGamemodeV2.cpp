@@ -2,6 +2,7 @@
 
 
 #include "DefaultStageGamemodeV2.h"
+#include  "IntroCameraCpp.h"
 
 ADefaultStageGamemodeV2::ADefaultStageGamemodeV2()
 {
@@ -31,6 +32,18 @@ FTransform ADefaultStageGamemodeV2::GetSpawnPosition(FRotator Rotation, float XS
 	return FTransform(Rotation.Quaternion(), NewLocation, FVector::One());
 }
 
+void ADefaultStageGamemodeV2::SetUpIntroCamera(FRotator Rotation, float XSpawnOffset, int Index)
+{
+	FActorSpawnParameters SpawnParameters;
+	FVector BattleZoneLocation = BattleZoneBp->GetActorLocation();
+	FTransform CamSpawnTransform = FTransform(Rotation, FVector(BattleZoneLocation.X + XSpawnOffset, BattleZoneLocation.Y, BattleZoneLocation.Z));
+	AIntroCameraCpp* cam =
+		Cast<AIntroCameraCpp>(
+			GetWorld()->SpawnActor(IntroCamClass, &CamSpawnTransform, SpawnParameters)
+		);
+	
+}	
+
 void ADefaultStageGamemodeV2::AddEnemyToBattle(ABaseEnemyCpp* EnemyToAdd)
 {
 	EnemiesToAdd.Add(EnemyToAdd);
@@ -42,15 +55,10 @@ void ADefaultStageGamemodeV2::IntroEnemy()
 	TArray<ABaseEnemyCpp*> TempArray = EnemiesToAdd;
 	EnemiesToAdd.Empty();
 	CalcOffset(TempArray.Num());
-}
-
-void ADefaultStageGamemodeV2::BattleSetUp(FTransform BattleStartPos)
-{
-	EngagePos = BattleStartPos;
+	
 	FActorSpawnParameters SpawnParameters;
-	BattleZoneBp = Cast<ABattleZoneCpp>(GetWorld()->SpawnActor(BattleZoneClass,&EngagePos, SpawnParameters));
 	int Index = 0;
-	for (ABaseEnemyCpp* Enemy : EnemiesToAdd)
+	for (ABaseEnemyCpp* Enemy : TempArray)
 	{
 		FTransform EnemySpawnTransform = GetSpawnPosition(FRotator(0, 180, 0),500.0f, Index);
 		ABaseBattleEnemyCpp* NewBattleEnemy = Cast<ABaseBattleEnemyCpp>(GetWorld()->
@@ -61,15 +69,21 @@ void ADefaultStageGamemodeV2::BattleSetUp(FTransform BattleStartPos)
 			)
 		);
 		
-		//ABaseBattleEnemyCpp* NewBattleEnemy = GetWorld()->SpawnActor<ABaseBattleEnemyCpp>();
-		//NewBattleEnemy->SetActorTransform(FTransform::Identity, false);
-		//NewBattleEnemy->SetActorTransform(GetSpawnPosition(FRotator(0, 0, 180),500.0f, Index));
 		EnemiesArray.Add(NewBattleEnemy);
 		Index += 1;
 	}
+
+	
+}
+
+void ADefaultStageGamemodeV2::BattleSetUp(FTransform BattleStartPos)
+{
+	EngagePos = BattleStartPos;
+	FActorSpawnParameters SpawnParameters;
+	BattleZoneBp = Cast<ABattleZoneCpp>(GetWorld()->SpawnActor(BattleZoneClass,&EngagePos, SpawnParameters));
 }
 
 void ADefaultStageGamemodeV2::PreBattleIntro()
 {
-	
+	IntroEnemy();
 }

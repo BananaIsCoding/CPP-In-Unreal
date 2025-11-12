@@ -9,6 +9,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "DefaultStageGamemodeV2.generated.h"
 
+class AIntroCameraCpp;
 /**
  * 
  */
@@ -25,7 +26,10 @@ protected:
 
 	FTransform GetSpawnPosition(FRotator Rotation, float XSpawnOffset, int Index);
 	
+	void SetUpIntroCamera(FRotator Rotation, float XSpawnOffset, int Index);
+	
 	void IntroEnemy();
+	
 
 	TArray<ABaseEnemyCpp*> EnemiesToAdd;
 
@@ -34,15 +38,18 @@ protected:
 	float PosOffset;
 
 	ABattleZoneCpp* BattleZoneBp;
-
+	
 public:
 	void BattleSetUp(FTransform BattleStartPos);
 	void PreBattleIntro();
 	void AddEnemyToBattle(ABaseEnemyCpp* EnemyToAdd);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Stuff For Designers")
+	UPROPERTY(EditDefaultsOnly, Category = "Required Objects")
 	TSubclassOf<ABattleZoneCpp> BattleZoneClass;
-
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Required Objects")
+	TSubclassOf<AIntroCameraCpp> IntroCamClass;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Stuff For Designers")
 	int SpawnSpacing = 200;
 	

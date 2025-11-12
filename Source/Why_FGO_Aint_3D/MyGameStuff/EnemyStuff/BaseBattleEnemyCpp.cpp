@@ -16,6 +16,7 @@ ABaseBattleEnemyCpp::ABaseBattleEnemyCpp()
 	/*SceneComponent = CreateDefaultSubobject<USceneComponent>("SceneComponent");
 	RootComponent = SceneComponent;*/
 	TextComponent = CreateDefaultSubobject<UTextRenderComponent>("NameTag");
+	TextComponent->SetupAttachment(RootComponent);
 	TextComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
 	TextComponent->SetHorizontalAlignment(EHorizTextAligment::EHTA_Center);
 	
