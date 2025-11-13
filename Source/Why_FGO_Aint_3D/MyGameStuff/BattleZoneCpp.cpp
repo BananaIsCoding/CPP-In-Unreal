@@ -25,7 +25,7 @@ ABattleZoneCpp::ABattleZoneCpp()
 void ABattleZoneCpp::BeginPlay()
 {
 	Super::BeginPlay();
-	DefaultStageGamemode = (ADefaultStageGamemodeV2*) GetWorld()->GetAuthGameMode();
+	DefaultStageGamemode = Cast<ADefaultStageGamemodeV2>(GetWorld()->GetAuthGameMode());
 	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ABattleZoneCpp::StartIntro, 1.0f, false);
 }
@@ -39,6 +39,8 @@ void ABattleZoneCpp::OnHitBoxOverlay(UPrimitiveComponent* OverlappedComponent, A
                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	ABaseEnemyCpp* Enemy = Cast<ABaseEnemyCpp>(OtherActor);
-	DefaultStageGamemode->AddEnemyToBattle(Enemy);
+	if (Enemy != nullptr)
+		DefaultStageGamemode->AddEnemyToBattle(Enemy);
+	
 }
 

@@ -7,6 +7,7 @@
 #include "Why_FGO_Aint_3D/DefaultCharacter.h"
 #include "DefaultPlayerBattleModeCpp.generated.h"
 
+class ABaseBattleEnemyCpp;
 class UTextRenderComponent;
 class ADefaultStageGamemodeV2;
 class UUserWidget;
@@ -25,6 +26,17 @@ protected:
 	UPROPERTY(EditAnywhere)
 	class UTextRenderComponent* TextComponent;
 
+	
+	TArray<ABaseBattleEnemyCpp*> EnemyArray;
+
+	bool ControlledByPlayer = false;
+
+	int CurrentEnemyIndex = 0;
+
+	FTimerHandle ManagerTimerHandle;
+	
+	FTimerHandle WaitTimerHandle;
+	
 	virtual void BeginPlay() override;
 
 public:
@@ -43,6 +55,12 @@ public:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetUpPartyMenuHPBar();
-	
-	
+
+	void AddEnemyToManager(ABaseBattleEnemyCpp* Enemy);
+
+	void StartEnemyManager(bool IsControlledByPlayer);
+
+	void MakeEnemyAttack();
+
+	void StopEnemyManager();
 };

@@ -52,20 +52,44 @@ void ADefaultStageGamemodeV2::EnemyTargetPicker()
 {
 	int playerCount = PartyArray.Num();
 	int enemyCount = EnemiesArray.Num();
-	int SplitCountForChar = playerCount / enemyCount;
-	UE_LOG(LogTemp, Log, TEXT("Split: %i"), SplitCountForChar);
-
-	int enemyIndexToStartAt = 0;
-	int enemyIndexToEndAt = SplitCountForChar - 1;
-	
-	for (int i = 0; i < playerCount; i++)
+	if (enemyCount == 1)
 	{
-		for (int enemyIndex = enemyIndexToStartAt; enemyIndex < enemyIndexToEndAt; enemyIndex++)
+		EnemiesArray[0]->ActivateEnemy(CurrentPossessedChar);
+		PartyArray[0]->AddEnemyToManager(EnemiesArray[0]);
+	}
+	else
+	{
+		int SplitCountForChar = enemyCount / playerCount;
+		UE_LOG(LogTemp, Log, TEXT("Split: %i"), SplitCountForChar);
+
+		int enemyIndexToStartAt = 0;
+		int enemyIndexToEndAt = SplitCountForChar - 1;
+		
+		for (int i = 0; i < playerCount; i++)
 		{
-			//EnemiesArray[enemyIndex]
+			for (int enemyIndex = enemyIndexToStartAt; enemyIndex < enemyIndexToEndAt; enemyIndex++)
+			{
+				EnemiesArray[enemyIndex]->ActivateEnemy(PartyArray[i]);
+				PartyArray[i]->AddEnemyToManager(EnemiesArray[enemyIndex]);
+			}
+			enemyIndexToStartAt += SplitCountForChar - 1;
+			enemyIndexToEndAt += SplitCountForChar - 1; 
 		}
-		enemyIndexToStartAt += SplitCountForChar - 1;
-		enemyIndexToEndAt += SplitCountForChar - 1; 
+
+		if (enemyCount % playerCount != 0)
+		{
+			for (int i = SplitCountForChar * playerCount; i < enemyCount; i++)
+			{
+				EnemiesArray[i]->ActivateEnemy(CurrentPossessedChar);
+				PartyArray[0]->AddEnemyToManager(EnemiesArray[i]);
+			}
+		}
+	}
+	
+	for (ADefaultPlayerBattleModeCpp* Player : PartyArray)
+	{
+		Player->StartEnemyManager(Player == CurrentPossessedChar);
+		Player->SetActorHiddenInGame(false);
 	}
 }
 
@@ -164,7 +188,7 @@ void ADefaultStageGamemodeV2::IntroCutsceneWaiter(int Num)
 {
 	FTimerHandle TimerHandle;
 	float WaitTime = Num * IntroCutsceneMultiplier;
-	//WaitTime = .1f;
+	WaitTime = .1f;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::BattleTurn, WaitTime, false);
 }
 
@@ -179,6 +203,8 @@ void ADefaultStageGamemodeV2::BattleTurn()
 		
 		MainHpBar->AddToViewport();
 		EnemyBattleHpList->AddToViewport();
+
+		EnemyTargetPicker();
 	}
 	else
 	{
@@ -201,7 +227,6 @@ void ADefaultStageGamemodeV2::PreBattleIntro()
 
 	FTimerHandle TimerHandle;
 	float WaitTime = EnemiesArray.Num() * IntroCutsceneMultiplier;
-	UE_LOG(LogTemp, Log, TEXT("time: %f"), WaitTime);
-	//WaitTime = 0.1f;
+	WaitTime = 0.1f;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::IntroPlayer, WaitTime, false);
 }

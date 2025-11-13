@@ -7,6 +7,15 @@
 #include "Why_FGO_Aint_3D/MyGameStuff/Structs/InfoStruct.h"
 #include "BaseBattleEnemyCpp.generated.h"
 
+struct FAIRequestID;
+class UBoxComponent;
+namespace EPathFollowingResult
+{
+	enum Type : int;
+}
+class UWidgetComponent;
+class AActorRotator;
+class USphereComponent;
 class ADefaultPlayerBattleModeCpp;
 class UHealthComponent;
 class UTextRenderComponent;
@@ -26,7 +35,6 @@ protected:
 	
 	enum EEnemyState
 	{
-		None,
 		MoveToPlayer,
 		Strafing,
 		Attacking,
@@ -39,14 +47,56 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UHealthComponent> HealthComponent;
 
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USphereComponent> AttackRangeHitBox;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UWidgetComponent> CardInfoSceneWidget;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UBoxComponent> AttackHitBox;
+
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "UI")
 	class UUserWidget* BattleModeHPBar;
 
 	ADefaultPlayerBattleModeCpp* Target;
 
-	EEnemyState CurrentState = None;
+	EEnemyState CurrentState = CardTurnMode;
 
+	bool IsPlayerInRange = false;
+
+	AActorRotator* RotatePoint;
+
+	FTimerHandle BehaviorLoopTimerHandler;
+	FTimerHandle LookTimerHandler;
+
+	bool IsStrafeEnded = true;
+	bool IsHitStun = false;
+
+	FVector BeforeAttackPos;
+	bool TargetIsNotNpc;
+
+	UFUNCTION()
+	void OnAttackRangeOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnAttackingOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	virtual void BeginPlay() override;
+	
 	void StartBehaviourLoop();
+
+	void BehaviourLoop();
+
+	void LookAtPlayer();
+
+	void MoveToAttackPos();
+
+	UFUNCTION()
+	void CheckOnAttackPos(FAIRequestID RequestID, EPathFollowingResult::Type Result);
 	
 public:
 	
@@ -56,12 +106,23 @@ public:
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class UUserWidget> Wb_BattleTurnEnemyHpBar;
 
+	UPROPERTY(EditAnywhere, Category = "Required Objects")
+	TSubclassOf<AActorRotator> ActorRotatorClass;
+
 	void SetEnemyStats(FInfoStruct Info);
 
 	void ActivateEnemy(ADefaultPlayerBattleModeCpp* TheTarget);
+
+	void StrafeEnded();
 	
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetUpBattleTurnHPBar();
 
-	
+	void AttackPlayer();
+
+	void AttackChar();
+
+	void EndAttack();
+
+	bool CanEnemyAttack();
 };
