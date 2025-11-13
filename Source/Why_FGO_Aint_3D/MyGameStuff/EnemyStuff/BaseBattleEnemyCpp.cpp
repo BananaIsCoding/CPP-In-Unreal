@@ -23,6 +23,11 @@ ABaseBattleEnemyCpp::ABaseBattleEnemyCpp()
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
 }
 
+void ABaseBattleEnemyCpp::StartBehaviourLoop()
+{
+	
+}
+
 void ABaseBattleEnemyCpp::SetEnemyStats(FInfoStruct Info)
 {
 	EnemyInfo = Info;
@@ -35,5 +40,16 @@ void ABaseBattleEnemyCpp::SetEnemyStats(FInfoStruct Info)
 	BattleModeHPBar = CreateWidget(GetWorld()->GetGameInstance(), Wb_BattleTurnEnemyHpBar);
 	
 	SetUpBattleTurnHPBar();
+}
+
+void ABaseBattleEnemyCpp::ActivateEnemy(ADefaultPlayerBattleModeCpp* TheTarget)
+{
+	Target = TheTarget;
+	CurrentState = MoveToPlayer;
+
+	SetActorHiddenInGame(false);
+
+	
+	
 }
 

@@ -7,6 +7,7 @@
 #include "Why_FGO_Aint_3D/MyGameStuff/Structs/InfoStruct.h"
 #include "BaseBattleEnemyCpp.generated.h"
 
+class ADefaultPlayerBattleModeCpp;
 class UHealthComponent;
 class UTextRenderComponent;
 class UUserWidget;
@@ -22,10 +23,16 @@ public:
 	
 
 protected:
-
-	/*UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess="true"))
-	class USceneComponent* SceneComponent;*/
-
+	
+	enum EEnemyState
+	{
+		None,
+		MoveToPlayer,
+		Strafing,
+		Attacking,
+		CardTurnMode
+	};
+	
 	UPROPERTY(EditAnywhere)
 	class UTextRenderComponent* TextComponent;
 
@@ -34,10 +41,14 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "UI")
 	class UUserWidget* BattleModeHPBar;
+
+	ADefaultPlayerBattleModeCpp* Target;
+
+	EEnemyState CurrentState = None;
+
+	void StartBehaviourLoop();
 	
 public:
-
-	void SetEnemyStats(FInfoStruct Info);
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Stuff For Designers")
 	FInfoStruct EnemyInfo;
@@ -45,6 +56,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class UUserWidget> Wb_BattleTurnEnemyHpBar;
 
+	void SetEnemyStats(FInfoStruct Info);
+
+	void ActivateEnemy(ADefaultPlayerBattleModeCpp* TheTarget);
+	
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetUpBattleTurnHPBar();
+
+	
 };

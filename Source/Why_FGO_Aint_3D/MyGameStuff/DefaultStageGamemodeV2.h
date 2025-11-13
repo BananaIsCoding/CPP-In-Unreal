@@ -46,19 +46,23 @@ protected:
 	FTransform GetSpawnPosition(FRotator Rotation, float XSpawnOffset, int Index);
 	
 	void SetUpIntroCamera(FRotator Rotation, float XSpawnOffset, int Index);
+
+	void EnemyTargetPicker();
 	
 	virtual void BeginPlay() override;
 
 	void IntroEnemy();
 
 	void IntroPlayer();
+
+	void IntroCutsceneWaiter(int Num);
+
+	void BattleTurn();
 	
 public:
 	void BattleSetUp(FTransform BattleStartPos);
 	void PreBattleIntro();
 	void AddEnemyToBattle(ABaseEnemyCpp* EnemyToAdd);
-
-	
 
 	UPROPERTY(EditDefaultsOnly, Category = "Required Objects")
 	TSubclassOf<ABattleZoneCpp> BattleZoneClass;
@@ -77,4 +81,16 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	class UUserWidget* PartyMenu;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UUserWidget> Wb_MainHpBarUI;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	class UUserWidget* MainHpBar;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UUserWidget> Wb_EnemyBattleHpListUI;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	class UUserWidget* EnemyBattleHpList;
 };

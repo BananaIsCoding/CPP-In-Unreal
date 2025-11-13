@@ -48,12 +48,36 @@ void ADefaultStageGamemodeV2::SetUpIntroCamera(FRotator Rotation, float XSpawnOf
 	
 }
 
+void ADefaultStageGamemodeV2::EnemyTargetPicker()
+{
+	int playerCount = PartyArray.Num();
+	int enemyCount = EnemiesArray.Num();
+	int SplitCountForChar = playerCount / enemyCount;
+	UE_LOG(LogTemp, Log, TEXT("Split: %i"), SplitCountForChar);
+
+	int enemyIndexToStartAt = 0;
+	int enemyIndexToEndAt = SplitCountForChar - 1;
+	
+	for (int i = 0; i < playerCount; i++)
+	{
+		for (int enemyIndex = enemyIndexToStartAt; enemyIndex < enemyIndexToEndAt; enemyIndex++)
+		{
+			//EnemiesArray[enemyIndex]
+		}
+		enemyIndexToStartAt += SplitCountForChar - 1;
+		enemyIndexToEndAt += SplitCountForChar - 1; 
+	}
+}
+
 void ADefaultStageGamemodeV2::BeginPlay()
 {
 	Super::BeginPlay();
 
-	PartyMenu = CreateWidget(GetWorld()->GetGameInstance(), Wb_PartyMenu);
-
+	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+	PartyMenu = CreateWidget(PlayerController, Wb_PartyMenu);
+	MainHpBar = CreateWidget(PlayerController, Wb_MainHpBarUI);
+	EnemyBattleHpList = CreateWidget(PlayerController, Wb_EnemyBattleHpListUI);
+	
 	FActorSpawnParameters SpawnParameters;
 	FTransform SpawnTransform = FTransform(FRotator::ZeroRotator, FVector(0.0f,0.0f,1000.0f), FVector::OneVector);
 	
@@ -132,6 +156,36 @@ void ADefaultStageGamemodeV2::IntroPlayer()
 	SetUpIntroCamera(FRotator(0.0f, 180.0f, 0.0f), -200.0f, PartyArray.Num());
 
 	CurrentPossessedChar = PartyArray[0];
+
+	IntroCutsceneWaiter(PartyArray.Num());
+}
+
+void ADefaultStageGamemodeV2::IntroCutsceneWaiter(int Num)
+{
+	FTimerHandle TimerHandle;
+	float WaitTime = Num * IntroCutsceneMultiplier;
+	//WaitTime = .1f;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::BattleTurn, WaitTime, false);
+}
+
+void ADefaultStageGamemodeV2::BattleTurn()
+{
+	if (EnemiesToAdd.IsEmpty())
+	{
+		APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+		PlayerController->Possess(CurrentPossessedChar);
+		PlayerController->SetShowMouseCursor(false);
+		PlayerController->SetInputMode(FInputModeGameOnly());
+		
+		MainHpBar->AddToViewport();
+		EnemyBattleHpList->AddToViewport();
+	}
+	else
+	{
+		// remove main hp bar
+		IntroCutsceneWaiter(EnemiesToAdd.Num());
+		IntroEnemy();
+	}
 }
 
 void ADefaultStageGamemodeV2::BattleSetUp(FTransform BattleStartPos)

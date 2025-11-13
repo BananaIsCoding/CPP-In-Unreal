@@ -12,10 +12,10 @@ struct FInfoStruct
 	FName Name;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
-	float Health;
+	float Health = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
-	float Damage;
+	float Damage = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
 	FName Class;

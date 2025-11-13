@@ -25,8 +25,6 @@ protected:
 	UPROPERTY(EditAnywhere)
 	class UTextRenderComponent* TextComponent;
 
-	
-
 	virtual void BeginPlay() override;
 
 public:
