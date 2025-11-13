@@ -6,6 +6,7 @@
 #include "DefaultPlayerBattleModeCpp.h"
 #include "FgoDefaultGameInstance.h"
 #include "IntroCameraCpp.h"
+#include "Blueprint/UserWidget.h"
 #include "Structs/CardPoolItem.h"
 
 ADefaultStageGamemodeV2::ADefaultStageGamemodeV2()
@@ -51,35 +52,25 @@ void ADefaultStageGamemodeV2::BeginPlay()
 {
 	Super::BeginPlay();
 
+	PartyMenu = CreateWidget(GetWorld()->GetGameInstance(), Wb_PartyMenu);
+
 	FActorSpawnParameters SpawnParameters;
-	FTransform SpawnTransform = FTransform::Identity;
+	FTransform SpawnTransform = FTransform(FRotator::ZeroRotator, FVector(0.0f,0.0f,1000.0f), FVector::OneVector);
 	
 	int PlayerIndex = 0;
-	/*
-	for (ADefaultPlayerBattleModeCpp* CharBP : Cast<UFgoDefaultGameInstance>(GetWorld()->GetGameInstance())->PartyCharRefArray)
-	{
-		//TSubclassOf<ADefaultPlayerBattleModeCpp> character =  GetWorld()->SpawnActor<CharBP>;
-		ADefaultPlayerBattleModeCpp Character = Cast<ADefaultPlayerBattleModeCpp> (GetWorld()->SpawnActor(CharBP, &SpawnTransform, SpawnParameters));
-		Character.SetActorHiddenInGame(true);
-		PartyArray.Add(&Character);
-
-		for(int i = 0; i < 4; i++)
-		{
-			FCardPoolItem Item = {PlayerIndex, i};
-			CardPool.Add(Item);
-		}
-		PlayerIndex++;
-	}
-	*/
-
 	
-	 for (TSubclassOf<ADefaultPlayerBattleModeCpp> CharBP : Cast<UFgoDefaultGameInstance>(GetWorld()->GetGameInstance())->PartyCharRefArray)
+	for (TSubclassOf<ADefaultPlayerBattleModeCpp> CharBP : Cast<UFgoDefaultGameInstance>(GetWorld()->GetGameInstance())->PartyCharRefArray)
 	{
-		/*
-		ADefaultPlayerBattleModeCpp* Character =  GetWorld()->SpawnActor<CharBP>;
+		ADefaultPlayerBattleModeCpp* Character = Cast<ADefaultPlayerBattleModeCpp>(GetWorld()->
+			SpawnActor(
+				CharBP,
+				&SpawnTransform,
+				SpawnParameters
+			)
+		);
+		
 	 	Character->SetActorHiddenInGame(true);
 	 	PartyArray.Add(Character);
-	 	*/
 	 	
 	 	for(int i = 0; i < 4; i++)
 	 	{
@@ -88,9 +79,6 @@ void ADefaultStageGamemodeV2::BeginPlay()
 	 	}
 	 	PlayerIndex++;
 	}
-	
-
-	
 }
 
 void ADefaultStageGamemodeV2::AddEnemyToBattle(ABaseEnemyCpp* EnemyToAdd)
@@ -128,6 +116,7 @@ void ADefaultStageGamemodeV2::IntroEnemy()
 
 void ADefaultStageGamemodeV2::IntroPlayer()
 {
+	UE_LOG(LogTemp, Log, TEXT("Run"));
 	GetWorld()->GetFirstPlayerController()->GetCharacter()->Destroy();
 	CalcOffset(PartyArray.Num());
 
@@ -140,7 +129,7 @@ void ADefaultStageGamemodeV2::IntroPlayer()
 		Index++;
 	}
 
-	SetUpIntroCamera(FRotator(0, 0, 180), -200.0f, PartyArray.Num());
+	SetUpIntroCamera(FRotator(0.0f, 180.0f, 0.0f), -200.0f, PartyArray.Num());
 
 	CurrentPossessedChar = PartyArray[0];
 }
@@ -157,7 +146,8 @@ void ADefaultStageGamemodeV2::PreBattleIntro()
 	IntroEnemy();
 
 	FTimerHandle TimerHandle;
-	float WaitTime = EnemiesToAdd.Num() * IntroCutsceneMultiplier;
+	float WaitTime = EnemiesArray.Num() * IntroCutsceneMultiplier;
+	UE_LOG(LogTemp, Log, TEXT("time: %f"), WaitTime);
 	//WaitTime = 0.1f;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::IntroPlayer, WaitTime, false);
 }

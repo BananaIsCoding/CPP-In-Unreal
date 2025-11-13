@@ -12,6 +12,7 @@
 struct FCardPoolItem;
 class ADefaultPlayerBattleModeCpp;
 class AIntroCameraCpp;
+class UUserWidget;
 /**
  * 
  */
@@ -57,6 +58,8 @@ public:
 	void PreBattleIntro();
 	void AddEnemyToBattle(ABaseEnemyCpp* EnemyToAdd);
 
+	
+
 	UPROPERTY(EditDefaultsOnly, Category = "Required Objects")
 	TSubclassOf<ABattleZoneCpp> BattleZoneClass;
 	
@@ -68,4 +71,10 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = "Stuff For Designers")
 	float IntroCutsceneMultiplier = 2.0f;
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UUserWidget> Wb_PartyMenu;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	class UUserWidget* PartyMenu;
 };

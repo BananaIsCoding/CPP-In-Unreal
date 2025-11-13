@@ -21,5 +21,5 @@ public:
 	UPROPERTY(EditAnywhere)
 	//TArray<ADefaultPlayerBattleModeCpp*> PartyCharRefArray;
 	TArray<TSubclassOf<ADefaultPlayerBattleModeCpp>> PartyCharRefArray;
-	
+
 };
