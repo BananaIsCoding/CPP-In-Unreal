@@ -74,5 +74,5 @@ public:
 	FInfoStruct EnemyInfo;
 
 	UPROPERTY(EditAnywhere, Category = "Stuff For Designers")
-	TSubclassOf<ABaseBattleEnemyCpp> BattleEnemyClass;
+	TSubclassOf<class ABaseBattleEnemyCpp> BattleEnemyClass;
 };

@@ -25,18 +25,135 @@ void UHealthComponent::BeginPlay()
 	GetOwner()->OnTakeAnyDamage.AddUniqueDynamic(this, &UHealthComponent::OnDamaged);
 }
 
-
-// Called every frame
-void UHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                     FActorComponentTickFunction* ThisTickFunction)
+float UHealthComponent::CalcClassAdvantage(EFgoClassType ClassOfAttacker)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	if (ClassOfAttacker == ClassOfDefender)
+	{
+		return 0;
+	}
 
-	// ...
+	if (ClassOfAttacker == EFgoClassType::Berserker && ClassOfDefender == EFgoClassType::Berserker)
+	{
+		return 0.5f;
+	}
+	
+	switch (ClassOfAttacker)
+	{
+		case EFgoClassType::Saber:
+			switch (ClassOfDefender)
+			{
+				case EFgoClassType::Archer:
+					return -0.5f;
+				break;
+				case EFgoClassType::Lancer:
+					return 1.0f;
+				break;
+				default:
+					return 0.0f;
+				break;
+			}
+		break;
+		case EFgoClassType::Archer:
+			switch (ClassOfDefender)
+			{
+				case EFgoClassType::Lancer:
+					return -0.5f;
+				break;
+				case EFgoClassType::Saber:
+					return 1.0f;
+				break;
+				default:
+					return 0.0f;
+				break;
+			}
+		break;
+		case EFgoClassType::Lancer:
+			switch (ClassOfDefender)
+			{
+				case EFgoClassType::Saber:
+					return -0.5f;
+				break;
+				case EFgoClassType::Archer:
+					return 1.0f;
+				break;
+				default:
+					return 0.0f;
+				break;
+			}
+		break;
+		case EFgoClassType::Rider:
+			switch (ClassOfDefender)
+			{
+				case EFgoClassType::Assassin:
+						return -0.5f;
+				break;
+				case EFgoClassType::Caster:
+					return 1.0f;
+				break;
+				default:
+						return 0.0f;
+				break;
+			}
+		break;
+		case EFgoClassType::Caster:
+			switch (ClassOfDefender)
+			{
+				case EFgoClassType::Rider:
+					return -0.5f;
+				break;
+				case EFgoClassType::Assassin:
+					return 1.0f;
+				break;
+				default:
+					return 0.0f;
+				break;
+			}
+		break;
+		case EFgoClassType::Assassin:
+			switch (ClassOfDefender)
+			{
+				case EFgoClassType::Caster:
+					return -0.5f;
+				break;
+				case EFgoClassType::Rider:
+					return 1.0f;
+				break;
+				default:
+					return 0.0f;
+				break;
+			}
+		break;
+		case EFgoClassType::Berserker:
+			return 0.5f;
+		break;
+		default:
+			return 0;
+		break;
+	}
+}
+
+float UHealthComponent::CalcCardAdvantage(ECardType ClassOfAttacker)
+{
+	return 1.0f;
+}
+
+void UHealthComponent::TakeDamage(float Damage)
+{
+	OnDamaged(Damage);
+}
+
+void UHealthComponent::TakeDamage(float Damage, EFgoClassType ClassOfAttacker)
+{
+	OnDamaged(Damage * (1 + CalcClassAdvantage(ClassOfAttacker)));
+}
+
+void UHealthComponent::TakeDamage(float Damage, EFgoClassType ClassOfAttacker, ECardType AttackCardType)
+{
+	OnDamaged(Damage * (1 + (CalcClassAdvantage(ClassOfAttacker) * CalcCardAdvantage(AttackCardType))));
 }
 
 void UHealthComponent::OnDamaged(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
-	class AController* InstigatedBy, AActor* DamageCauser)
+                                 class AController* InstigatedBy, AActor* DamageCauser)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
 	UE_LOG(LogTemp, Warning, TEXT("Health Current Health: %f"), CurrentHealth);
@@ -46,5 +163,25 @@ void UHealthComponent::OnDamaged(AActor* DamagedActor, float Damage, const class
 		if (OnDeath.IsBound())
 			OnDeath.Broadcast();
 	}
+	else
+	{
+		if (OnDamageDone.IsBound())
+			OnDamageDone.Broadcast();
+	}
 }
+
+void UHealthComponent::OnDamaged(float Damage)
+{
+	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
+	UE_LOG(LogTemp, Warning, TEXT("Health Current Health: %f"), CurrentHealth);
+
+	if (OnDamageDone.IsBound())
+		OnDamageDone.Broadcast();
+	if (CurrentHealth <= 0.0f)
+	{
+		if (OnDeath.IsBound())
+			OnDeath.Broadcast();
+	}
+}
+
 

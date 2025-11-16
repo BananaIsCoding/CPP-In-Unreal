@@ -30,7 +30,7 @@ void ABaseEnemyCpp::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (EnemyInfo.Class == "None")
+	if (EnemyInfo.Class == EFgoClassType::None)
 	{
 		SetRandomClass();
 	}
@@ -41,38 +41,12 @@ void ABaseEnemyCpp::BeginPlay()
 		PathFollowState();
 	}
 
-	
 }
 
 void ABaseEnemyCpp::SetRandomClass()
 {
-	switch (rand() % 7)
-	{
-	case 0:
-		EnemyInfo.Class = "Saber";
-		break;
-	case 1:
-		EnemyInfo.Class = "Lancer";
-		break;
-	case 2:
-		EnemyInfo.Class = "Archer";
-		break;
-	case 3:
-		EnemyInfo.Class = "Caster";
-		break;
-	case 4:
-		EnemyInfo.Class = "Assassin";
-		break;
-	case 5:
-		EnemyInfo.Class = "Rider";
-		break;
-	case 6:
-		EnemyInfo.Class = "Berserker";
-		break;
-	default:
-		
-		break;
-	}
+	// + 1 because 0 is none
+	EnemyInfo.Class = static_cast<EFgoClassType>(rand() % 7 + 1);
 }
 
 void ABaseEnemyCpp::PathFollowState()
@@ -119,7 +93,6 @@ void ABaseEnemyCpp::OnHitBoxHit(UPrimitiveComponent* OverlappedComponent, AActor
 {
 	if ( Cast<ADefaultCharacter>( OtherActor))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Hit"));
 		DefaultStageGamemode->BattleSetUp(GetTransform());
 	}
 }

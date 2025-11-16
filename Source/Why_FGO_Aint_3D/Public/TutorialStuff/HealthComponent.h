@@ -4,9 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Why_FGO_Aint_3D/MyGameStuff/Enums/FgoCardTypeEnum.h"
+#include "Why_FGO_Aint_3D/MyGameStuff/Enums/FgoClassTypeEnum.h"
 #include "HealthComponent.generated.h"
 
+// Damage, Class, Art
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDamageDone);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeathEvent);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDamage, float, Damage, EFgoClassType, ClassOfAttacker, ECardType, AttackCardType);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class WHY_FGO_AINT_3D_API UHealthComponent : public UActorComponent
@@ -21,20 +28,29 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-public:
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-	                           FActorComponentTickFunction* ThisTickFunction) override;
+	float CalcClassAdvantage(EFgoClassType ClassOfAttacker);
+	float CalcCardAdvantage(ECardType ClassOfAttacker);
 
+public:
+
+	void TakeDamage(float Damage);
+	void TakeDamage(float Damage, EFgoClassType ClassOfAttacker);
+	void TakeDamage(float Damage, EFgoClassType ClassOfAttacker, ECardType AttackCardType );
+
+	//void TakeDamage(float Damage, EFgoClassType AttackerClass);
 	UFUNCTION()
 	void OnDamaged(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+	void OnDamaged(float Damage);
 
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Health")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float MaxHealth = 100.0f;
-
-	UPROPERTY(BlueprintReadWrite, EditDefaultsOnly, Category = "Health")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	float CurrentHealth = 0.0f;
+	EFgoClassType ClassOfDefender;
+	ECardType ChosenCard;
 
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
 	FOnDeathEvent OnDeath;
+	UPROPERTY(BlueprintAssignable, BlueprintCallable)
+	FOnDamageDone OnDamageDone;
 };

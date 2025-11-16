@@ -15,6 +15,7 @@
 #include "TutorialStuff/HealthComponent.h"
 #include "DefaultCharacter.generated.h"
 
+class UBoxComponent;
 class USphereComponent;
 class UFloatingPawnMovement;
 
@@ -42,6 +43,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAudioComponent> AudioComponent;
 
+	UPROPERTY(VisibleAnywhere);
+	TObjectPtr<UBoxComponent> AttackHitBox;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -57,6 +61,11 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void MovementEffects();
+
+	UFUNCTION()
+	virtual void EnableCharacter();
+	UFUNCTION()
+	virtual void DisableCharacter();
 	
 protected:
 

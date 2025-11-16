@@ -2,6 +2,7 @@
 #include "DefaultCharacter.h"
 
 #include "Components/AudioComponent.h"
+#include "Components/BoxComponent.h"
 
 // Sets default values
 ADefaultCharacter::ADefaultCharacter()
@@ -27,13 +28,19 @@ ADefaultCharacter::ADefaultCharacter()
 	AudioComponent->SetAutoActivate(false);
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+	AttackHitBox = CreateDefaultSubobject<UBoxComponent>("BasicAttackHitBox");
+	AttackHitBox->SetupAttachment(RootComponent);
+	AttackHitBox->SetRelativeLocation(FVector(120.0f, 0.0f, 30.0f));
+	AttackHitBox->SetRelativeScale3D(FVector(2.75f, 2.5f, 2.5f));
+	AttackHitBox->SetCollisionProfileName("NoCollision");
+	AttackHitBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 }
 
 // Called when the game starts or when spawned
 void ADefaultCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
@@ -70,6 +77,21 @@ void ADefaultCharacter::SetActorOverlap_Implementation(AActor* OverlappedActor)
 
 	OverlappedActorRef = OverlappedActor;
 }
+
+void ADefaultCharacter::EnableCharacter()
+{
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+}
+
+void ADefaultCharacter::DisableCharacter()
+{
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+}
+
 
 void ADefaultCharacter::MovementEffects_Implementation()
 {
@@ -120,6 +142,3 @@ void ADefaultCharacter::AttackFunction_Implementation()
 	UE_LOG(LogTemp, Log, TEXT("Attack!!!"));
 	AttackFunction();
 }
-
-
-

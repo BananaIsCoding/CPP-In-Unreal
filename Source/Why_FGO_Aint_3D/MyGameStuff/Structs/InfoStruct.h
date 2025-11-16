@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "Why_FGO_Aint_3D/MyGameStuff/Enums/FgoClassTypeEnum.h"
 #include "InfoStruct.generated.h"
 
 USTRUCT(BlueprintType)
@@ -18,6 +19,5 @@ struct FInfoStruct
 	float Damage = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Info")
-	FName Class;
-	
+	EFgoClassType Class = EFgoClassType::None;
 };

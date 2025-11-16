@@ -22,9 +22,8 @@ AActorRotator::AActorRotator()
 
 void AActorRotator::StartRotate()
 {
-	float RotateSpeed = FMath::RandRange(5.0f, 40.0f);
+	float RotateSpeed = FMath::RandRange(15.0f, 30.0f);
 	RotateSpeed *= 1 - (2 * FMath::RandRange(0.0f, 1.0f));
-	UE_LOG(LogTemp, Log, TEXT("Rotate Speed: %f"), RotateSpeed);
 
 	RotatingMovementComponent->RotationRate.Yaw = RotateSpeed;
 
