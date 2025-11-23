@@ -6,6 +6,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Widgets/TestHpWidget.h"
 
 // Sets default values
@@ -28,7 +29,6 @@ ADefaultPlayerBattleModeCpp::ADefaultPlayerBattleModeCpp()
 
 	AttackHitBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ADefaultPlayerBattleModeCpp::OnAttackHitBoxOverlay);
 }
-
 void ADefaultPlayerBattleModeCpp::BeginPlay()
 {
 	Super::BeginPlay();
@@ -52,7 +52,6 @@ void ADefaultPlayerBattleModeCpp::BeginPlay()
 	PartyMenuHPBar = CreateWidget(GetWorld()->GetGameInstance(), Wb_PartyMenuHpItem);
 	SetReferenceAndCastUiInBP();
 }
-
 void ADefaultPlayerBattleModeCpp::UpdateHealthUI()
 {
 	UpdatePartyMenuHpUI();
@@ -76,7 +75,7 @@ void ADefaultPlayerBattleModeCpp::OpenPartyMenu()
 		}
 		else
 		{
-			UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0);
+			UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.0001);
 			PlayerController->SetShowMouseCursor(true);
 			PlayerController->SetInputMode(FInputModeGameAndUI());
 			DefaultStageGamemode->PartyMenu->AddToViewport();
@@ -124,14 +123,19 @@ void ADefaultPlayerBattleModeCpp::AttackFunction_Implementation()
 {
 	if (!MenuOpened)
 	{
-		// my own attack thing (Comment out if using designer stuff)
-		AttackHitBox->SetCollisionProfileName("PlayerHitBox");
+		if (!IsOnM1Cooldown)
+		{
+			IsOnM1Cooldown = true;
+			// my own attack thing (Comment out if using designer stuff)
+			AttackHitBox->SetCollisionProfileName("PlayerHitBox");
 
-		FTimerHandle Handle;
-		WorldTimerManager->SetTimer(Handle, this, &ADefaultPlayerBattleModeCpp::EndAttack, 0.1f, false);
-
-		// this will call designer's attack stuff
-		AttackFunction();
+			FTimerHandle Handle;
+			WorldTimerManager->SetTimer(Handle, this, &ADefaultPlayerBattleModeCpp::EndAttack, 0.1f, false);
+			FTimerHandle HandleFoCd;
+			WorldTimerManager->SetTimer(HandleFoCd, this, &ADefaultPlayerBattleModeCpp::TurnAttackCooldownOff, M1Cooldown, false);
+			// this will call designer's attack stuff
+			AttackFunction();
+		}
 	}
 }
 
@@ -140,12 +144,21 @@ void ADefaultPlayerBattleModeCpp::EndAttack()
 	AttackHitBox->SetCollisionProfileName("NoCollision");
 }
 
+void ADefaultPlayerBattleModeCpp::TurnAttackCooldownOff()
+{
+	Super::TurnAttackCooldownOff();
+}
+
 void ADefaultPlayerBattleModeCpp::OnAttackHitBoxOverlay(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                                        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (ABaseBattleEnemyCpp* Enemy = Cast<ABaseBattleEnemyCpp>(OtherActor))
 	{
 		Enemy->HealthComponent->TakeDamage(PlayerInfo.Damage, PlayerInfo.Class);
+		if (HitEffectSystem)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffectSystem,OtherActor->GetActorLocation(), FRotator(0, 0, 0), FVector::One(), true, true);
+		}
 	}
 }
 
@@ -162,6 +175,8 @@ void ADefaultPlayerBattleModeCpp::PrepareForCardTurn()
 	SetActorHiddenInGame(true);
 }
 
+// for designers to call to end the attack animations
+// and pass through the damage percentage that was not done during the animation
 void ADefaultPlayerBattleModeCpp::EndCardAttack(float AttackAnimDuration, bool DoYouNeedMeToDoDmg)
 {
 	if (DoYouNeedMeToDoDmg)
@@ -195,6 +210,7 @@ void ADefaultPlayerBattleModeCpp::DealCardDamage(float DamagePercentage)
 void ADefaultPlayerBattleModeCpp::DisableCharacter()
 {
 	Super::DisableCharacter();
+	StopEnemyManager();
 	PartyMenuHPBar->RemoveFromParent();
 }
 
@@ -204,11 +220,11 @@ void ADefaultPlayerBattleModeCpp::EnableCharacter()
 	AddHpBarToList();
 }
 
+// function to manage which enemy will attack during Battle stage
 void ADefaultPlayerBattleModeCpp::AddEnemyToManager(ABaseBattleEnemyCpp* Enemy)
 {
 	EnemyArray.Add(Enemy);
 }
-
 void ADefaultPlayerBattleModeCpp::StartEnemyManager(bool IsControlledByPlayer)
 {
 	ControlledByPlayer = IsControlledByPlayer;
@@ -217,7 +233,6 @@ void ADefaultPlayerBattleModeCpp::StartEnemyManager(bool IsControlledByPlayer)
 
 	WorldTimerManager->SetTimer(ManagerTimerHandle, this, &ADefaultPlayerBattleModeCpp::MakeEnemyAttack, 5.0f, false);
 }
-
 void ADefaultPlayerBattleModeCpp::MakeEnemyAttack()
 {
 	if (EnemyArray.IsEmpty())
@@ -245,19 +260,21 @@ void ADefaultPlayerBattleModeCpp::MakeEnemyAttack()
 				}
 				CurrentEnemyIndex++;
 				WorldTimerManager->SetTimer(ManagerTimerHandle, this, &ADefaultPlayerBattleModeCpp::MakeEnemyAttack, 5.0f, false);
+				return;
 			}
 		}
 		else
 		{
 			EnemyArray.RemoveAt(CurrentEnemyIndex);
-			WorldTimerManager->SetTimer(WaitTimerHandle, this, &ADefaultPlayerBattleModeCpp::MakeEnemyAttack, 0.1f, false);
 		}
+		WorldTimerManager->SetTimer(WaitTimerHandle, this, &ADefaultPlayerBattleModeCpp::MakeEnemyAttack, 0.1f, false);
 	}
 }
-
 void ADefaultPlayerBattleModeCpp::StopEnemyManager()
 {
-	WorldTimerManager->ClearTimer(ManagerTimerHandle);
-	WorldTimerManager->ClearTimer(WaitTimerHandle);
+	if (ManagerTimerHandle.IsValid())
+		WorldTimerManager->ClearTimer(ManagerTimerHandle);
+	if (WaitTimerHandle.IsValid())
+		WorldTimerManager->ClearTimer(WaitTimerHandle);
 	EnemyArray.Empty();
 }

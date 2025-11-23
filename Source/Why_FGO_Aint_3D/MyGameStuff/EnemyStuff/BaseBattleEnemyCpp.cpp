@@ -29,8 +29,6 @@ ABaseBattleEnemyCpp::ABaseBattleEnemyCpp()
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 	
-	/*SceneComponent = CreateDefaultSubobject<USceneComponent>("SceneComponent");
-	RootComponent = SceneComponent;*/
 	TextComponent = CreateDefaultSubobject<UTextRenderComponent>("NameTag");
 	TextComponent->SetupAttachment(RootComponent);
 	TextComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
@@ -48,6 +46,7 @@ ABaseBattleEnemyCpp::ABaseBattleEnemyCpp()
 
 	CardInfoSceneWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("CardInfoWidget"));
 	CardInfoSceneWidget->SetupAttachment(RootComponent);
+	CardInfoSceneWidget->SetVisibility(false);
 	CardInfoSceneWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 145.0f));
 	CardInfoSceneWidget->SetRelativeScale3D(FVector(1.0f, .5f, .5f));
 
@@ -62,22 +61,24 @@ ABaseBattleEnemyCpp::ABaseBattleEnemyCpp()
 	BaseRootPart->SetCollisionProfileName("DefaultEnemyBodyCollision");
 }
 
+// selects a random enemy in battle
 void ABaseBattleEnemyCpp::SelectRandomTarget()
 {
 	int RandonPlayerIndex = FMath::RandRange(0, GameMode->GetPlayerCharacterCount() - 1);
 	Target = &GameMode->GetPlayerCharacter(RandonPlayerIndex);
 }
-
+// Generate a random card for enemy to use
 void ABaseBattleEnemyCpp::SelectRandomCardType()
 {
 	// + 1 because 0 is none
 	HealthComponent->ChosenCard = static_cast<ECardType>(rand() % 3 + 1);
 }
-
+// Function to run enemy on damage code
 void ABaseBattleEnemyCpp::UpdateHealthUI()
 {
 	if (CurrentState == CardTurnMode)
 	{
+		// update card turn UIs
 		UpdateCardTurnHpBar();
 		SelectRandomCardType();
 		UpdateCardDisplayer(HealthComponent->ChosenCard);
@@ -87,6 +88,7 @@ void ABaseBattleEnemyCpp::UpdateHealthUI()
 		UpdateBattleTurnHpBar();
 		if (!IsHitStun)
 		{
+			// stuns the enemy for a brief moment and don't stack it
 			IsHitStun = true;
 			RotatePoint->StopRotate();
 			FTimerHandle AHandleToUse;
@@ -94,6 +96,8 @@ void ABaseBattleEnemyCpp::UpdateHealthUI()
 		}
 		if (!IsBattleHpBarInList)
 		{
+			// show the enemy health on the side of the screen for a brief moment
+			// [NOTE] reset timer if hit again and info is still on screen 
 			IsBattleHpBarInList = true;
 			AddToBattleHpList();
 			FTimerHandle TimerHandle;
@@ -101,18 +105,16 @@ void ABaseBattleEnemyCpp::UpdateHealthUI()
 		}
 	}
 }
-
 void ABaseBattleEnemyCpp::HideBattleHpBarFromList()
 {
 	BattleModeHPBar->RemoveFromParent();
 	IsBattleHpBarInList = false;
 }
-
 void ABaseBattleEnemyCpp::EndHitStun()
 {
 	IsHitStun = false;
 }
-
+// Set up rotation point to prepare to strafe around the player when they are in the attack range
 void ABaseBattleEnemyCpp::OnAttackRangeOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                                     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -137,7 +139,7 @@ void ABaseBattleEnemyCpp::OnAttackRangeOverlapBegin(UPrimitiveComponent* Overlap
 		}
 	}
 }
-
+// unbind the enemy from the rotator and change it's state make it move to the player
 void ABaseBattleEnemyCpp::OnAttackingOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
@@ -155,35 +157,21 @@ void ABaseBattleEnemyCpp::OnAttackingOverlapEnd(UPrimitiveComponent* OverlappedC
 				true
 				)
 			);
-		
 			CurrentState = MoveToPlayer;
 			StrafeEnded();
 		}
 	}
 }
-
+// deal damage to player if attack hitbox touches the player
 void ABaseBattleEnemyCpp::OnAttackHitBoxOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (Cast<ADefaultPlayerBattleModeCpp>(OtherActor) == Target)
 	{
-
-		/*
-		UStandardFgoDamageType FgoDamageType;
-		FgoDamageType.ClassOfAttacker = EnemyInfo.Class;
-		UGameplayStatics::ApplyDamage(Target, EnemyInfo.Damage, GetController(), this, FgoDamageType.StaticClass());
-		*/
-
-		/*
-		FDamageEvent MyCustomDamageEvent;
-		MyCustomDamageEvent.DamageTypeClass = GameMode->StandardDamageType;
-		Cast<UStandardFgoDamageType>(MyCustomDamageEvent.DamageTypeClass)->Init(EnemyInfo.Class);
-		Target->TakeDamage(EnemyInfo.Damage, MyCustomDamageEvent, GetController(), this);
-		*/
 		Target->HealthComponent->TakeDamage(EnemyInfo.Damage, EnemyInfo.Class);
 	}
 }
-
+// setup
 void ABaseBattleEnemyCpp::BeginPlay()
 {
 	Super::BeginPlay();
@@ -197,22 +185,26 @@ void ABaseBattleEnemyCpp::BeginPlay()
 
 	if (GameMode)
 	{
-		GameMode->OnCardPrepTurn.AddDynamic(this, &ABaseBattleEnemyCpp::PrepForCardTurn);
-		GameMode->ShowEnemyTarget.AddDynamic(this, &ABaseBattleEnemyCpp::ChangeToAttackMode);
+		SetUpGameModeDelegateLink();
 	}
 	BattleModeHPBar = CreateWidget(GetWorld()->GetGameInstance(), Wb_BattleTurnEnemyHpBar);
 	CardDisplayer = CardInfoSceneWidget->GetWidget();
 	SetReferenceAndCastUiInBP();
 }
+void ABaseBattleEnemyCpp::SetUpGameModeDelegateLink()
+{
+	GameMode->OnCardPrepTurn.AddDynamic(this, &ABaseBattleEnemyCpp::PrepForCardTurn);
+	GameMode->ShowEnemyTarget.AddDynamic(this, &ABaseBattleEnemyCpp::ChangeToAttackMode);
+}
 
+// behaviour loop stuff
 void ABaseBattleEnemyCpp::StartBehaviourLoop()
 {
 	WorldTimerManager->SetTimer(BehaviorLoopTimerHandler, this, &ABaseBattleEnemyCpp::BehaviourLoop, 0.2, true);
 	CardInfoSceneWidget->SetVisibility(false);
-
+	// start function so that enemy always look at player
 	WorldTimerManager->SetTimer(LookTimerHandler, this, &ABaseBattleEnemyCpp::LookAtPlayer, 0.01, true);
 }
-
 void ABaseBattleEnemyCpp::BehaviourLoop()
 {
 	if (!IsHitStun)
@@ -223,10 +215,12 @@ void ABaseBattleEnemyCpp::BehaviourLoop()
 				if (IsStrafeEnded)
 				{
 					IsStrafeEnded = false;
+					GetCapsuleComponent()->SetCollisionProfileName("IgnoreEnemy");
 					RotatePoint->StartRotate();
 				}
 			break;
 			case MoveToPlayer:
+				GetCapsuleComponent()->SetCollisionProfileName("DefaultEnemyBodyCollision");
 				RotatePoint->StopRotate();
 				EnemyAIController->MoveToActor(Target, 250.0f);;
 			break;
@@ -235,35 +229,29 @@ void ABaseBattleEnemyCpp::BehaviourLoop()
 		}
 	}
 }
-
 void ABaseBattleEnemyCpp::LookAtPlayer()
 {
 	SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target->GetActorLocation()));
 }
-
 void ABaseBattleEnemyCpp::MoveToAttackPos()
 {
 	CurrentState = Attacking;
 	RotatePoint->StopRotate();
-	// might not need to call strafe ended and stop rotates calls it
 	StrafeEnded();
-
+	// calculate a reasonable distance for enemy to go back to after attacking the player
 	BeforeAttackPos = GetActorLocation();
-
 	FVector DirectionVector = UKismetMathLibrary::GetDirectionUnitVector(Target->GetActorLocation(), GetActorLocation());
-
 	BeforeAttackPos = (DirectionVector * 295.0f) + Target->GetActorLocation();
 
-	Cast<UCapsuleComponent>(GetRootComponent())->SetCollisionProfileName("IgnoreEnemy");
+	GetCapsuleComponent()->SetCollisionProfileName("IgnoreEnemy");
 
 	EnemyAIController->MoveToActor(Target, 100.0f);
 	EnemyAIController->ReceiveMoveCompleted.AddDynamic(this, &ABaseBattleEnemyCpp::CheckOnAttackPos);
 }
-
+// when enemy reaches the attack point
 void ABaseBattleEnemyCpp::CheckOnAttackPos(FAIRequestID RequestID, EPathFollowingResult::Type Result)
 {
 	EnemyAIController->ReceiveMoveCompleted.RemoveDynamic(this, &ABaseBattleEnemyCpp::CheckOnAttackPos);
-	Cast<UCapsuleComponent>(GetRootComponent())->SetCollisionProfileName("DefaultEnemyBodyCollision");
 	if (TargetIsNotNpc)
 	{
 		AttackHitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -272,10 +260,11 @@ void ABaseBattleEnemyCpp::CheckOnAttackPos(FAIRequestID RequestID, EPathFollowin
 	}
 	else
 	{
+		// randomise the outcome of the attack if enemy is attack player's ally
 		int RandNum = FMath::RandRange(0,99);
 		if (RandNum < 50)
 		{
-			UE_LOG(LogTemp, Log, TEXT("Block"));
+			//UE_LOG(LogTemp, Log, TEXT("Block"));
 		}
 		else if (RandNum < 70)
 		{
@@ -285,7 +274,6 @@ void ABaseBattleEnemyCpp::CheckOnAttackPos(FAIRequestID RequestID, EPathFollowin
 		{
 			Target->HealthComponent->TakeDamage(EnemyInfo.Damage, EnemyInfo.Class);
 		}
-
 		EndAttack();
 	}
 }
@@ -321,19 +309,19 @@ void ABaseBattleEnemyCpp::PrepForCardTurn()
 	EnableEnemyCardDisplayer(true, Target->PlayerInfo.Name, HealthComponent->ChosenCard);
 	CardInfoSceneWidget->SetVisibility(true);
 }
-
 void ABaseBattleEnemyCpp::DealCardDamage(float DamagePercentage)
 {
 	Target->HealthComponent->TakeDamage(EnemyInfo.Damage * (DamagePercentage/100.0f), EnemyInfo.Class, HealthComponent->ChosenCard);
 }
-
+// when it is enemy's turn during card phrase
 void ABaseBattleEnemyCpp::ChangeToAttackMode()
 {
 	SelectRandomTarget();
 	SelectRandomCardType();
 	EnableEnemyCardDisplayer(false, Target->PlayerInfo.Name, HealthComponent->ChosenCard);
 }
-
+// for designers to call to end the attack animations
+// and pass through the damage percentage that was not done during the animation
 void ABaseBattleEnemyCpp::EndCardAttack(float AttackAnimDuration, bool DoYouNeedMeToDoDmg)
 {
 	SetActorHiddenInGame(true);
@@ -344,7 +332,7 @@ void ABaseBattleEnemyCpp::EndCardAttack(float AttackAnimDuration, bool DoYouNeed
 	FTimerHandle Handle;
 	WorldTimerManager->SetTimer(Handle, GameMode, &ADefaultStageGamemodeV2::EnemyCardAttackCompleteStuff, AttackAnimDuration, false );
 }
-
+// used to give enemy their data
 void ABaseBattleEnemyCpp::SetEnemyStats(FInfoStruct Info)
 {
 	EnemyInfo = Info;
@@ -383,7 +371,7 @@ void ABaseBattleEnemyCpp::SetEnemyStats(FInfoStruct Info)
 	
 	SetUpBattleTurnHPBar();
 }
-
+// enable enemies to attack again during battle phrase
 void ABaseBattleEnemyCpp::ActivateEnemy(ADefaultPlayerBattleModeCpp* TheTarget)
 {
 	Target = TheTarget;
@@ -398,18 +386,16 @@ void ABaseBattleEnemyCpp::ActivateEnemy(ADefaultPlayerBattleModeCpp* TheTarget)
 	AttackRangeHitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 }
-
 void ABaseBattleEnemyCpp::StrafeEnded()
 {
 	IsStrafeEnded = true;
 }
-
+// both func below is used to determine if enemy is attack the player or their allies
 void ABaseBattleEnemyCpp::AttackPlayer()
 {
 	TargetIsNotNpc = true;
 	MoveToAttackPos();
 }
-
 void ABaseBattleEnemyCpp::AttackChar()
 {
 	TargetIsNotNpc = false;
@@ -432,12 +418,11 @@ void ABaseBattleEnemyCpp::EndAttack()
 		}
 	}
 }
-
+// used by enemy manager to check if enemy can attack
 bool ABaseBattleEnemyCpp::CanEnemyAttack()
 {
 	return IsPlayerInRange && !IsHitStun;
 }
-
 void ABaseBattleEnemyCpp::DoCardAttack()
 {
 	switch (HealthComponent->ChosenCard)

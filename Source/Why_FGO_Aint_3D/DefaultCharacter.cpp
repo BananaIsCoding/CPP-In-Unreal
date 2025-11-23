@@ -36,20 +36,17 @@ ADefaultCharacter::ADefaultCharacter()
 	AttackHitBox->SetCollisionProfileName("NoCollision");
 	AttackHitBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 }
-
 // Called when the game starts or when spawned
 void ADefaultCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 }
-
 // Called every frame
 void ADefaultCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
 }
-
 // Called to bind functionality to input
 void ADefaultCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -70,21 +67,21 @@ void ADefaultCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		Input->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ADefaultCharacter::AttackFunction_Implementation);
 	}
 }
-
+// for tutorial
 void ADefaultCharacter::SetActorOverlap_Implementation(AActor* OverlappedActor)
 {
 	ITutorial_PlayerInterface::SetActorOverlap_Implementation(OverlappedActor);
-
 	OverlappedActorRef = OverlappedActor;
 }
 
+// to turn the free roam character off during battle mode
+// and on after battle ended
 void ADefaultCharacter::EnableCharacter()
 {
 	SetActorHiddenInGame(false);
 	SetActorEnableCollision(true);
 	SetActorTickEnabled(true);
 }
-
 void ADefaultCharacter::DisableCharacter()
 {
 	SetActorHiddenInGame(true);
@@ -92,7 +89,7 @@ void ADefaultCharacter::DisableCharacter()
 	SetActorTickEnabled(false);
 }
 
-
+// for tutorial
 void ADefaultCharacter::MovementEffects_Implementation()
 {
 	if (!AudioComponent->IsPlaying())
@@ -120,7 +117,6 @@ void ADefaultCharacter::MoveFunction(const FInputActionValue& InputValue)
 		AddMovementInput(RightDirection, InputVector.X);
 	}
 }
-
 void ADefaultCharacter::LookFunction(const FInputActionValue& InputValue)
 {
 	FVector2D InputVector = InputValue.Get<FVector2D>();
@@ -131,14 +127,22 @@ void ADefaultCharacter::LookFunction(const FInputActionValue& InputValue)
 		
 	}
 }
-
 void ADefaultCharacter::JumpFunction()
 {
 	ACharacter::Jump();
 }
 
+void ADefaultCharacter::TurnAttackCooldownOff()
+{
+	IsOnM1Cooldown = false;
+}
 void ADefaultCharacter::AttackFunction_Implementation()
 {
-	UE_LOG(LogTemp, Log, TEXT("Attack!!!"));
-	AttackFunction();
+	if (!IsOnM1Cooldown)
+	{
+		IsOnM1Cooldown = true;
+		AttackFunction();
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ADefaultCharacter::TurnAttackCooldownOff, M1Cooldown, false);
+	}
 }

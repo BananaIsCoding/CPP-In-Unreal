@@ -29,12 +29,12 @@ void AActorRotator::StartRotate()
 
 	GetWorld()->GetTimerManager().SetTimer(RotateTimer, this, &AActorRotator::StopRotate, FMath::RandRange(5.0f, 15.0f), false);
 }
-
 void AActorRotator::StopRotate()
 {
-	RotateTimer.Invalidate();
+	GetWorld()->GetTimerManager().ClearTimer(RotateTimer);
 	RotatingMovementComponent->RotationRate = FRotator(0.0f, 0.0f, 0.0f);
 
+	// tell enemy that the rotator has successfully ended and they can start strafing again
 	TArray<AActor*> ChildrenArray;
 	this->GetAttachedActors(ChildrenArray, true, false);
 	for (AActor* Child : ChildrenArray)
@@ -45,7 +45,6 @@ void AActorRotator::StopRotate()
 		}
 	}
 }
-
 void AActorRotator::ChangeDirection()
 {
 	RotatingMovementComponent->RotationRate.Yaw *= -1.0f;

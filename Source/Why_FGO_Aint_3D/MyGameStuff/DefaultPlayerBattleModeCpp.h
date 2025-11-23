@@ -30,8 +30,6 @@ protected:
 	UPROPERTY(EditAnywhere)
 	class UTextRenderComponent* TextComponent;
 	
-	TArray<ABaseBattleEnemyCpp*> EnemyArray;
-
 	bool MenuOpened = false;
 
 	int CurrentEnemyIndex = 0;
@@ -50,6 +48,7 @@ protected:
 
 	void AttackFunction_Implementation() override;
 	void EndAttack();
+	virtual void TurnAttackCooldownOff() override;
 
 	UFUNCTION()
 	void OnAttackHitBoxOverlay(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -77,6 +76,8 @@ protected:
 
 public:
 
+	TArray<ABaseBattleEnemyCpp*> EnemyArray;
+	
 	bool ControlledByPlayer = false;
 	
 	UPROPERTY(EditAnywhere, Category = "EnhancedInput")

@@ -7,15 +7,9 @@
 // Sets default values for this component's properties
 UHealthComponent::UHealthComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
-	// ...
 }
 
-
-// Called when the game starts
 void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -25,6 +19,7 @@ void UHealthComponent::BeginPlay()
 	GetOwner()->OnTakeAnyDamage.AddUniqueDynamic(this, &UHealthComponent::OnDamaged);
 }
 
+// calculate the advantage percentage
 float UHealthComponent::CalcClassAdvantage(EFgoClassType ClassOfAttacker)
 {
 	if (ClassOfAttacker == ClassOfDefender)
@@ -131,22 +126,69 @@ float UHealthComponent::CalcClassAdvantage(EFgoClassType ClassOfAttacker)
 		break;
 	}
 }
-
-float UHealthComponent::CalcCardAdvantage(ECardType ClassOfAttacker)
+float UHealthComponent::CalcCardAdvantage(ECardType AttackerCardType)
 {
-	return 1.0f;
+	if (AttackerCardType == ChosenCard)
+	{
+		return 0.0f;
+	}
+	switch (AttackerCardType)
+	{
+		case ECardType::Quick:
+			switch ( ChosenCard)
+			{
+				case ECardType::Art:
+					return -0.2f;
+				break;
+				case ECardType::Buster:
+					return 0.2f;
+				break;
+				default:
+				break;
+			}
+		break;
+		case ECardType::Art:
+			switch ( ChosenCard)
+			{
+				case ECardType::Quick:
+					return 0.2f;
+				break;
+				case ECardType::Buster:
+					return -0.2f;
+				break;
+				default:
+				break;
+			}
+		break;
+		case ECardType::Buster:
+			switch ( ChosenCard)
+			{
+				case ECardType::Quick:
+					return -0.2f;
+				break;
+				case ECardType::Art:
+					return 0.2f;
+				break;
+				default:
+				break;
+				
+			}
+		break;
+		default:
+		break;
+	}
+	return 0;
 }
 
+// functions to call to deal damage
 void UHealthComponent::TakeDamage(float Damage)
 {
 	OnDamaged(Damage);
 }
-
 void UHealthComponent::TakeDamage(float Damage, EFgoClassType ClassOfAttacker)
 {
 	OnDamaged(Damage * (1 + CalcClassAdvantage(ClassOfAttacker)));
 }
-
 void UHealthComponent::TakeDamage(float Damage, EFgoClassType ClassOfAttacker, ECardType AttackCardType)
 {
 	OnDamaged(Damage * (1 + (CalcClassAdvantage(ClassOfAttacker) * CalcCardAdvantage(AttackCardType))));
@@ -156,7 +198,6 @@ void UHealthComponent::OnDamaged(AActor* DamagedActor, float Damage, const class
                                  class AController* InstigatedBy, AActor* DamageCauser)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
-	UE_LOG(LogTemp, Warning, TEXT("Health Current Health: %f"), CurrentHealth);
 	
 	if (CurrentHealth <= 0.0f)
 	{
@@ -173,7 +214,6 @@ void UHealthComponent::OnDamaged(AActor* DamagedActor, float Damage, const class
 void UHealthComponent::OnDamaged(float Damage)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.0f, MaxHealth);
-	UE_LOG(LogTemp, Warning, TEXT("Health Current Health: %f"), CurrentHealth);
 
 	if (OnDamageDone.IsBound())
 		OnDamageDone.Broadcast();

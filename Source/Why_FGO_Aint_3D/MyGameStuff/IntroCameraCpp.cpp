@@ -32,11 +32,8 @@ void AIntroCameraCpp::StartMovingCamera()
 {
 	GetWorld()->GetTimerManager().SetTimer(MoveCameraTimerHandler, this, &AIntroCameraCpp::MoveCamera, 0.01f, true);
 }
-
 void AIntroCameraCpp::MoveCamera()
 {
-	//UE_LOG(LogTemp, Log, TEXT("Hello"));
-	
 	if (Camera->GetRelativeLocation() != EndPoint->GetRelativeLocation())
 	{
 		Camera->SetRelativeLocation(
@@ -53,7 +50,6 @@ void AIntroCameraCpp::MoveCamera()
 		GetWorld()->GetTimerManager().ClearTimer(MoveCameraTimerHandler);
 	}
 }
-
 void AIntroCameraCpp::StartTheCutscene(float TravelDistance)
 {
 	FVector NewPoint = EndPoint->GetRelativeLocation();

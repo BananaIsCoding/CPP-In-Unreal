@@ -1,5 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
+// this was failure and the health component now handles the damages types. (I didn't want to delete just in case it broke the build)
 #pragma once
 
 #include "CoreMinimal.h"

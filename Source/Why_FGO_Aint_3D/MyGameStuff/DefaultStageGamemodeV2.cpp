@@ -8,6 +8,8 @@
 #include "IntroCameraCpp.h"
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
+#include "Components/AudioComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Structs/CardPoolItem.h"
@@ -15,8 +17,14 @@
 
 ADefaultStageGamemodeV2::ADefaultStageGamemodeV2()
 {
+	SceneComponent = CreateDefaultSubobject<USceneComponent>("SceneComponent");
+	SetRootComponent(SceneComponent);
+	AudioComponent = CreateDefaultSubobject<UAudioComponent>("AudioComponent");
+	AudioComponent->SetupAttachment(RootComponent);
+	AudioComponent->bAutoActivate = false;
 }
 
+// utilities functions
 void ADefaultStageGamemodeV2::CalcOffset(int ArrayLen)
 {
 	if (ArrayLen == 1)
@@ -33,14 +41,12 @@ void ADefaultStageGamemodeV2::CalcOffset(int ArrayLen)
 	}
 	//UE_LOG(LogTemp, Log, TEXT("Example text that prints a float: %f"), PosOffset);
 }
-
 FTransform ADefaultStageGamemodeV2::GetSpawnPosition(FRotator Rotation, float XSpawnOffset, int Index)
 {
 	FVector NewLocation = FVector(EngagePos.GetLocation().X + XSpawnOffset,(SpawnSpacing * Index) + PosOffset + EngagePos.GetLocation().Y, EngagePos.GetLocation().Z);
 
 	return FTransform(Rotation.Quaternion(), NewLocation, FVector::One());
 }
-
 void ADefaultStageGamemodeV2::SetUpIntroCamera(FRotator Rotation, float XSpawnOffset, int Index)
 {
 	FActorSpawnParameters SpawnParameters;
@@ -51,7 +57,7 @@ void ADefaultStageGamemodeV2::SetUpIntroCamera(FRotator Rotation, float XSpawnOf
 	)->StartTheCutscene((SpawnSpacing * Index) + 100.0f );
 	
 }
-
+// makes enemy choose a player to attack during battle phrase
 void ADefaultStageGamemodeV2::EnemyTargetPicker()
 {
 	int playerCount = PartyArray.Num();
@@ -95,7 +101,7 @@ void ADefaultStageGamemodeV2::EnemyTargetPicker()
 		Player->SetActorHiddenInGame(false);
 	}
 }
-
+// change player camera to view the selected enemy
 void ADefaultStageGamemodeV2::ViewEnemy()
 {
 	ABaseBattleEnemyCpp* EnemyBeingViewed =  EnemiesArray[ViewingEnemyIndex];
@@ -125,6 +131,8 @@ void ADefaultStageGamemodeV2::BeginPlay()
 	EnemyBattleHpList = CreateWidget(PlayerController, Wb_EnemyBattleHpListUI);
 	CardSelectionList = CreateWidget(PlayerController, Wb_CardSelectionUI);
 	EnemySelectionMenu = CreateWidget(PlayerController, Wb_EnemySelectionMenuUI);
+	StageCompleteMenu = CreateWidget(PlayerController, Wb_StageCompleteUI);
+	StageFailedMenu = CreateWidget(PlayerController, Wb_StageFailedUI);
 	CppMainHpBar = Cast<UTestHpWidget>(CreateWidget(PlayerController, Wb_MainHpBarUiCpp));
 
 	FActorSpawnParameters SpawnParameters;
@@ -157,14 +165,23 @@ void ADefaultStageGamemodeV2::BeginPlay()
 	}
 
 	SetReferenceAndCastUiInBP();
+
+	PlayerController->SetShowMouseCursor(false);
+	PlayerController->SetInputMode(FInputModeGameOnly());
+
+
+	AudioComponent->Sound = RoamBgm;
+	AudioComponent->Play();
 }
 
+// a public func to save the enemy and later add to battle
 void ADefaultStageGamemodeV2::AddEnemyToBattle(ABaseEnemyCpp* EnemyToAdd)
 {
 	EnemiesToAdd.Add(EnemyToAdd);
 	EnemyToAdd->Destroy();
 }
-
+// allow player to switch to different characters in player's party
+// and tell code that character is being controlled by the player 
 void ADefaultStageGamemodeV2::ChangeCharPossess(ADefaultPlayerBattleModeCpp* PlayerCharacter)
 {
 	if (PlayerCharacter != CurrentPossessedChar)
@@ -177,7 +194,7 @@ void ADefaultStageGamemodeV2::ChangeCharPossess(ADefaultPlayerBattleModeCpp* Pla
 		CurrentPossessedChar->HealthComponent->TakeDamage(0);
 	}
 }
-
+// allow player to change which enemy they are viewing
 void ADefaultStageGamemodeV2::ChangeEnemyView(bool GoBackward)
 {
 	EnemiesArray[ViewingEnemyIndex]->SetActorHiddenInGame(true);
@@ -205,10 +222,11 @@ void ADefaultStageGamemodeV2::ChangeEnemyView(bool GoBackward)
 	}
 	ViewEnemy();
 }
-
+// runs when player picks a card and determine if it is for attack or defense
 void ADefaultStageGamemodeV2::ChosenCard(int IndexInPoolArray)
 {
-	CardSelectionList->RemoveFromParent();
+	if (CardSelectionList->IsVisible())
+		CardSelectionList->RemoveFromParent();
 	ADefaultPlayerBattleModeCpp* PlayerChar = PartyArray[CardPool[IndexInPoolArray].CharIndex];
 	int PlayerCardIndex = CardPool[IndexInPoolArray].SkillIndex;
 	if (PlayerAttackCount > 2)
@@ -222,7 +240,7 @@ void ADefaultStageGamemodeV2::ChosenCard(int IndexInPoolArray)
 		PlayerChar->DoCardAttack(PlayerCardIndex);
 	}
 }
-
+// when card attack animation is done, prep for the next attack 
 void ADefaultStageGamemodeV2::PlayerCardAttackCompleteStuff()
 {
 	if (!EnemiesArray.IsEmpty())
@@ -234,7 +252,8 @@ void ADefaultStageGamemodeV2::PlayerCardAttackCompleteStuff()
 		}
 		else
 		{
-			CardSelectionList->AddToViewport();
+			if (!CardSelectionList->IsVisible())
+				CardSelectionList->AddToViewport();
 			if (PlayerAttackCount == 3)
 			{
 				EnemiesArray[ViewingEnemyIndex]->SetActorHiddenInGame(true);
@@ -251,13 +270,15 @@ void ADefaultStageGamemodeV2::PlayerCardAttackCompleteStuff()
 		}
 	}
 }
-
 void ADefaultStageGamemodeV2::EnemyCardAttackCompleteStuff()
 {
 	ViewingEnemyIndex++;
 	if (ViewingEnemyIndex == EnemiesArray.Num())
 	{
-		BattleTurn();
+		// ends card phrase if all enemy has attacked
+		ViewingEnemyIndex = 0;
+		FTimerHandle Handle;
+		WorldTimerManager->SetTimer(Handle, this, &ADefaultStageGamemodeV2::DelayBeforeBattleTurn, 0.1f, false);
 	}
 	else
 	{
@@ -269,16 +290,15 @@ void ADefaultStageGamemodeV2::EnemyCardAttackCompleteStuff()
 		}
 		else
 		{
-			CardSelectionList->AddToViewport();
+			if (!CardSelectionList->IsVisible())
+				CardSelectionList->AddToViewport();
 		}
 	}
 }
-
 void ADefaultStageGamemodeV2::DelayEnemyAttackAnim()
 {
 	EnemiesArray[ViewingEnemyIndex]->DoCardAttack();
 }
-
 void ADefaultStageGamemodeV2::DealDamageToCurrentViewingEnemy(float Damage, EFgoClassType ClassType, ECardType CardType)
 {
 	EnemiesArray[ViewingEnemyIndex]->HealthComponent->TakeDamage(Damage, ClassType, CardType);
@@ -288,9 +308,24 @@ void ADefaultStageGamemodeV2::OnEnemyDefeat(ABaseBattleEnemyCpp* DefeatedEnemy)
 {
 	if (EnemiesArray.Num() == 1)
 	{
+		// if last enemy was defeated
 		EnemiesArray.RemoveAt(0);
 		DefeatedEnemy->Destroy();
-		EndBattleMode();
+		// check if there is enemy waiting to join
+		if (EnemiesToAdd.Num() != 0)
+		{
+			if (OnCardPrepTurn.IsBound())
+				OnCardPrepTurn.Broadcast();
+			if (BattleModeTimerHandle.IsValid())
+				WorldTimerManager->ClearTimer(BattleModeTimerHandle);
+			UWidgetLayoutLibrary::RemoveAllWidgets(PlayerController);
+			BattleTurn();
+		}
+		else
+		{
+			EndBattleMode();
+		}
+		
 	}
 	else
 	{
@@ -324,12 +359,16 @@ void ADefaultStageGamemodeV2::OnEnemyDefeat(ABaseBattleEnemyCpp* DefeatedEnemy)
 		DefeatedEnemy->Destroy();
 	}
 }
-
 void ADefaultStageGamemodeV2::OnCharacterDefeat(ADefaultPlayerBattleModeCpp* PlayerChar)
 {
-	if (EnemiesArray.Num() == 1)
+	if (PartyArray.Num() == 1)
 	{
-		UKismetSystemLibrary::QuitGame(TheWorld, PlayerController, EQuitPreference::Quit, true);
+		// if last character in player's party is defeated
+		PlayerController->SetShowMouseCursor(true);
+		PlayerController->SetInputMode(FInputModeUIOnly());
+		StageFailedMenu->AddToViewport();
+		UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.0001);
+		//UKismetSystemLibrary::QuitGame(TheWorld, PlayerController, EQuitPreference::Quit, true);
 	}
 	else
 	{
@@ -338,15 +377,25 @@ void ADefaultStageGamemodeV2::OnCharacterDefeat(ADefaultPlayerBattleModeCpp* Pla
 			if (CurrentPossessedChar == PlayerChar)
 			{
 				PlayerController->Possess(PartyArray[0]);
+				CurrentPossessedChar = PartyArray[0];
+				CurrentPossessedChar->ControlledByPlayer = true;
+				CurrentPossessedChar->HealthComponent->TakeDamage(0);
 			}
 			// [NOTE] do reassign enemy
+			for (ABaseBattleEnemyCpp* Enemy : PlayerChar->EnemyArray)
+			{
+				Enemy->Target = CurrentPossessedChar;
+			}
+			PlayerChar->Destroy();
 		}
 	}
 }
-
 void ADefaultStageGamemodeV2::EndBattleMode()
 {
+	CurrentBattleState = EBattleState::EndingBattle;
 	BattleZoneBp->Destroy();
+	if (BattleModeTimerHandle.IsValid())
+		WorldTimerManager->ClearTimer(BattleModeTimerHandle);
 	UWidgetLayoutLibrary::RemoveAllWidgets(PlayerController);
 	if (OnBattleEnded.IsBound())
 		OnBattleEnded.Broadcast();
@@ -354,41 +403,60 @@ void ADefaultStageGamemodeV2::EndBattleMode()
 	PlayerController->Possess(FreeRoamCharacter);
 	PlayerController->SetShowMouseCursor(false);
 	PlayerController->SetInputMode(FInputModeGameOnly());
+	AudioComponent->Stop();
+	AudioComponent->Sound = RoamBgm;
+	AudioComponent->Play();
+	FTimerHandle TimerHandle;
+	WorldTimerManager->SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::BattleFullyEnded, 0.1f, false);
+}
+void ADefaultStageGamemodeV2::OnBossDefeat()
+{
+	PlayerController->SetShowMouseCursor(true);
+	PlayerController->SetInputMode(FInputModeUIOnly());
+	StageCompleteMenu->AddToViewport();
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.0001);
 }
 
 void ADefaultStageGamemodeV2::IntroEnemy()
 {
+	// gets enemy that needs to be added to battle
 	TArray<ABaseEnemyCpp*> TempArray = EnemiesToAdd;
 	EnemiesToAdd.Empty();
 	CalcOffset(TempArray.Num());
 	
 	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 	int Index = 0;
+	// for each enemy that needed to be added
 	for (ABaseEnemyCpp* Enemy : TempArray)
 	{
 		FTransform EnemySpawnTransform = GetSpawnPosition(FRotator(0, 180, 0),500.0f, Index);
-		ABaseBattleEnemyCpp* NewBattleEnemy = Cast<ABaseBattleEnemyCpp>(TheWorld->
-			SpawnActor(
-				Enemy->BattleEnemyClass,
-				&EnemySpawnTransform,
-				SpawnParameters
-			)
-		);
-
-		NewBattleEnemy->SetEnemyStats(Enemy->EnemyInfo);
-		
-		EnemiesArray.Add(NewBattleEnemy);
-		Index += 1;
+		if (Enemy->BattleEnemyClass)
+		{
+			ABaseBattleEnemyCpp* NewBattleEnemy = Cast<ABaseBattleEnemyCpp>(TheWorld->
+				SpawnActor(
+					Enemy->BattleEnemyClass,
+					&EnemySpawnTransform,
+					SpawnParameters
+				)
+			);
+			// just in case enemy could not spawn due to obstruction
+			if (NewBattleEnemy)
+			{
+				NewBattleEnemy->SetEnemyStats(Enemy->EnemyInfo);
+			
+				EnemiesArray.Add(NewBattleEnemy);
+				Index += 1;
+			}
+		}
 	}
 	
 	SetUpIntroCamera(FRotator::ZeroRotator, 200.0f, TempArray.Num());
 	TempArray.Empty();
 }
-
+// same as enemy but for player
 void ADefaultStageGamemodeV2::IntroPlayer()
 {
-	FreeRoamCharacter->DisableCharacter();
-	
 	CalcOffset(PartyArray.Num());
 
 	int Index = 0;
@@ -406,101 +474,120 @@ void ADefaultStageGamemodeV2::IntroPlayer()
 
 	IntroCutsceneWaiter(PartyArray.Num());
 }
-
 void ADefaultStageGamemodeV2::IntroCutsceneWaiter(int Num)
 {
 	FTimerHandle TimerHandle;
 	float WaitTime = Num * IntroCutsceneMultiplier;
-	WaitTime = .1f;
 	WorldTimerManager->SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::BattleTurn, WaitTime, false);
 }
-
+// set up for battle phrase
 void ADefaultStageGamemodeV2::BattleTurn()
 {
-	CurrentBattleState = EBattleState::InBattleTurn;
-	if (EnemiesToAdd.IsEmpty())
+	if (CurrentBattleState != EndingBattle)
 	{
-		PlayerController->Possess(CurrentPossessedChar);
-		PlayerController->SetShowMouseCursor(false);
-		PlayerController->SetInputMode(FInputModeGameOnly());
+		CurrentBattleState = InBattleTurn;
+		// check if any enemies need to be added
+		if (EnemiesToAdd.IsEmpty())
+		{
+			PlayerController->Possess(CurrentPossessedChar);
+			PlayerController->SetShowMouseCursor(false);
+			PlayerController->SetInputMode(FInputModeGameOnly());
+			
+			//MainHpBar->AddToViewport();
+			if (!MainHpBar->IsVisible())
+				CppMainHpBar->AddToViewport();
+			EnemyBattleHpList->AddToViewport();
+
+			EnemyTargetPicker();
+		}
+		else
+		{
+			// remove main hp bar
+			IntroCutsceneWaiter(EnemiesToAdd.Num());
+			IntroEnemy();
+		}
 		
-		//MainHpBar->AddToViewport();
-		CppMainHpBar->AddToViewport();
-		EnemyBattleHpList->AddToViewport();
-
-		EnemyTargetPicker();
+		WorldTimerManager->SetTimer(BattleModeTimerHandle, this, &ADefaultStageGamemodeV2::CardTurnSetUp, BattleTurnDuration, false);
 	}
-	else
-	{
-		// remove main hp bar
-		IntroCutsceneWaiter(EnemiesToAdd.Num());
-		IntroEnemy();
-	}
-	FTimerHandle TimerHandle;
-	WorldTimerManager->SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::CardTurnSetUp, BattleTurnDuration, false);
 }
-
 void ADefaultStageGamemodeV2::CardTurnSetUp()
 {
-	CurrentBattleState = EBattleState::InCardTurn;
-	EnemyBattleHpList->RemoveFromParent();
-	if (OnCardPrepTurn.IsBound())
-		OnCardPrepTurn.Broadcast();
-	CardPoolInUse = {0, 1, 2, 3, 4};
-	if (PartyArray.Num() != 1)
+	if (CurrentBattleState != EndingBattle)
 	{
-		// this array will be used to pick a random index of the actual pool with no repeat picks
-		TArray<int> CardsToPickFrom;
-		for (int i = 0; i < CardPool.Num(); i++)
+		CurrentBattleState = EBattleState::InCardTurn;
+		EnemyBattleHpList->RemoveFromParent();
+		if (OnCardPrepTurn.IsBound())
+			OnCardPrepTurn.Broadcast();
+		CardPoolInUse = {0, 1, 2, 3, 4};
+		// pick 5 randoms card
+		if (PartyArray.Num() != 1)
 		{
-			CardsToPickFrom.Add(i);
+			// this array will be used to pick a random index of the actual pool with no repeat picks
+			TArray<int> CardsToPickFrom;
+			for (int i = 0; i < CardPool.Num(); i++)
+			{
+				CardsToPickFrom.Add(i);
+			}
+			for (int J = 0; J < 5; J++)
+			{
+				int RandIndex = FMath::RandRange(0, CardsToPickFrom.Num() - 1);
+				CardPoolInUse[J] = CardsToPickFrom[RandIndex];
+				CardsToPickFrom.RemoveAt(RandIndex);
+			}
 		}
-		for (int J = 0; J < 5; J++)
+		if (!CardSelectionList->IsVisible())
+			CardSelectionList->AddToViewport();
+		EnemySelectionMenu->AddToViewport();
+		PlayerController->SetShowMouseCursor(true);
+		PlayerController->SetInputMode(FInputModeUIOnly());
+		PlayerController->FlushPressedKeys();
+		FTimerHandle TimerHandle;
+		ViewingEnemyIndex = 0;
+		ViewEnemy();
+		PlayerController->SetViewTargetWithBlend(CardTurnCamera, 1.0f);
+		CLearCardSelection();
+		PlayerAttackCount = 0;
+		// pass info over to UI
+		for (int Num = 0; Num < 5; Num++)
 		{
-			int RandIndex = FMath::RandRange(0, CardsToPickFrom.Num() - 1);
-			CardPoolInUse[J] = CardsToPickFrom[RandIndex];
-			CardsToPickFrom.RemoveAt(RandIndex);
+			FCardPoolItem CardInfo = CardPool[CardPoolInUse[Num]];
+			ADefaultPlayerBattleModeCpp* Player = PartyArray[CardInfo.CharIndex];
+			PassCardInfo(
+				Player->PlayerInfo.Name,
+				Player->CardSkillList[CardInfo.SkillIndex],
+				CardPoolInUse[Num],
+				Num
+			);
 		}
 	}
-	CardSelectionList->AddToViewport();
-	EnemySelectionMenu->AddToViewport();
-	PlayerController->SetShowMouseCursor(true);
-	PlayerController->SetInputMode(FInputModeUIOnly());
-	PlayerController->FlushPressedKeys();
-	// give time to stop enemy moving
-	FTimerHandle TimerHandle;
-	ViewingEnemyIndex = 0;
-	ViewEnemy();
-	PlayerController->SetViewTargetWithBlend(CardTurnCamera, 1.0f);
-	CLearCardSelection();
-	PlayerAttackCount = 0;
-	for (int Num = 0; Num < 5; Num++)
-	{
-		FCardPoolItem CardInfo = CardPool[CardPoolInUse[Num]];
-		ADefaultPlayerBattleModeCpp* Player = PartyArray[CardInfo.CharIndex];
-		PassCardInfo(
-			Player->PlayerInfo.Name,
-			Player->CardSkillList[CardInfo.SkillIndex],
-			CardPoolInUse[Num],
-			Num
-		);
-	}
+}
+
+// used to ensure that no code is running when battle is ending 
+void ADefaultStageGamemodeV2::BattleFullyEnded()
+{
+	CurrentBattleState = UnEngaged;
+}
+// delay to check if battle ended between the two phrase
+void ADefaultStageGamemodeV2::DelayBeforeBattleTurn()
+{
+	BattleTurn();
 }
 
 void ADefaultStageGamemodeV2::BattleSetUp(FTransform BattleStartPos)
 {
+	AudioComponent->Stop();
+	AudioComponent->Sound = BattleBgm;
+	AudioComponent->Play();
 	CurrentBattleState = EBattleState::SettingUp;
 	EngagePos = BattleStartPos;
 	FActorSpawnParameters SpawnParameters;
 	BattleZoneBp = Cast<ABattleZoneCpp>(TheWorld->SpawnActor(BattleZoneClass,&EngagePos, SpawnParameters));
 }
-
 void ADefaultStageGamemodeV2::PreBattleIntro()
 {
+	FreeRoamCharacter->DisableCharacter();
 	IntroEnemy();
-
 	FTimerHandle TimerHandle;
 	float WaitTime = EnemiesArray.Num() * IntroCutsceneMultiplier;
-	WaitTime = 0.1f;
 	WorldTimerManager->SetTimer(TimerHandle, this, &ADefaultStageGamemodeV2::IntroPlayer, WaitTime, false);
 }

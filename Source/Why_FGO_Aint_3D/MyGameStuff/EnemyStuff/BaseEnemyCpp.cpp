@@ -5,6 +5,7 @@
 #include "Why_FGO_Aint_3D/MyGameStuff/DefaultStageGamemodeV2.h"
 #include "MyEnemyAiController.h"
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Why_FGO_Aint_3D/DefaultCharacter.h"
 //#include "Perception/PawnSensingComponent.h"
@@ -17,11 +18,15 @@ ABaseEnemyCpp::ABaseEnemyCpp()
 	PrimaryActorTick.bCanEverTick = true;
 
 	//AIController = CreateDefaultSubobject<AAIController>(TEXT("AIController"));
+	GetMesh()->SetCollisionProfileName("IgnoreEnemy");
+	GetCapsuleComponent()->SetCollisionProfileName("IgnoreEnemy");
 
 	AttackHitBox = CreateDefaultSubobject<UBoxComponent>("HitBox");
 	AttackHitBox->SetupAttachment(RootComponent);
 	AttackHitBox->SetCollisionProfileName("OverlapAll");
 	AttackHitBox->OnComponentBeginOverlap.AddUniqueDynamic(this, &ABaseEnemyCpp::OnHitBoxHit);
+
+	GetCharacterMovement()->MaxWalkSpeed = 300.0f;
 	
 }
 

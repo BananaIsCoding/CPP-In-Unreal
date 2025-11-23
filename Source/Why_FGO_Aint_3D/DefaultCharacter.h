@@ -15,6 +15,7 @@
 #include "TutorialStuff/HealthComponent.h"
 #include "DefaultCharacter.generated.h"
 
+class UNiagaraSystem;
 class UBoxComponent;
 class USphereComponent;
 class UFloatingPawnMovement;
@@ -30,8 +31,6 @@ class WHY_FGO_AINT_3D_API ADefaultCharacter : public ACharacter, public ITutoria
 
 	UPROPERTY(EditAnywhere, meta = (AllowPrivateAccess="true"))
 	class USpringArmComponent* SpringArm;
-
-	
 	 
 public:
 	// Sets default values for this character's properties
@@ -49,6 +48,13 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere, Category = "Adjustable Variables")
+	float M1Cooldown = 0.5f;
+	bool IsOnM1Cooldown = false;
+
+	UPROPERTY(EditAnywhere, Category = "Stuff For Designers")
+	UNiagaraSystem* HitEffectSystem;
 
 public:	
 	// Called every frame
@@ -88,4 +94,7 @@ protected:
 	void JumpFunction();
 	UFUNCTION(BlueprintNativeEvent)
 	void AttackFunction();
+
+	UFUNCTION()
+	virtual void TurnAttackCooldownOff();
 };

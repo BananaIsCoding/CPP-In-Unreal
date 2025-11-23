@@ -69,8 +69,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	class UUserWidget* CardDisplayer;
 
-	ADefaultPlayerBattleModeCpp* Target;
-
 	EEnemyState CurrentState = CardTurnMode;
 
 	bool IsPlayerInRange = false;
@@ -113,6 +111,7 @@ protected:
 	
 
 	virtual void BeginPlay() override;
+	virtual void SetUpGameModeDelegateLink();
 	
 	void StartBehaviourLoop();
 	void BehaviourLoop();
@@ -123,9 +122,9 @@ protected:
 	void CheckOnAttackPos(FAIRequestID RequestID, EPathFollowingResult::Type Result);
 
 	UFUNCTION()
-	void OnEnemyDeath();
+	virtual void OnEnemyDeath();
 	UFUNCTION()
-	void PrepForCardTurn();
+	virtual void PrepForCardTurn();
 	UFUNCTION(BlueprintImplementableEvent)
 	void EnableEnemyCardDisplayer(UPARAM() bool HideTarget, UPARAM() FName TargetName, UPARAM() ECardType CardType);
 	UFUNCTION(BlueprintImplementableEvent)
@@ -139,11 +138,13 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void DealCardDamage(UPARAM() float DamagePercentage);
 	UFUNCTION()
-	void ChangeToAttackMode();
+	virtual  void ChangeToAttackMode();
 	UFUNCTION(BlueprintImplementableEvent)
 	void UpdateCardDisplayer(UPARAM() ECardType NewCardType);
 	
 public:
+
+	ADefaultPlayerBattleModeCpp* Target;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Stuff For Designers")
 	FInfoStruct EnemyInfo;

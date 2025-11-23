@@ -17,7 +17,6 @@ void AMainMenuGamemode::BeginPlay()
 
 	MainMenuUI->AddToViewport();
 }
-
 void AMainMenuGamemode::SetUpUI()
 {
 	if (IsValid(Wb_MainMenu))
@@ -35,7 +34,6 @@ void AMainMenuGamemode::DisplayStageSelectUI_Implementation()
 	MainMenuUI->RemoveFromParent();
 	StageSelectUI->AddToViewport();
 }
-
 void AMainMenuGamemode::DisplayMainMenuUI_Implementation()
 {
 	StageSelectUI->RemoveFromParent();

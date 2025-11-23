@@ -9,10 +9,10 @@
 // Sets default values
 AMyEnemyAiController::AMyEnemyAiController()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 }
-
+// at first my delegate did not work, so I made my own controller to override this function.
+// (I later got the delegate to work for a different thing but didn't have time to change it so this is not use)
 void AMyEnemyAiController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
 {
 	Super::OnMoveCompleted(RequestID, Result);

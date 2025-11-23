@@ -21,7 +21,6 @@ ABattleZoneCpp::ABattleZoneCpp()
 	SphereCollider->SetupAttachment(RootComponent);
 }
 
-// Called when the game starts or when spawned
 void ABattleZoneCpp::BeginPlay()
 {
 	Super::BeginPlay();
@@ -29,7 +28,6 @@ void ABattleZoneCpp::BeginPlay()
 	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ABattleZoneCpp::StartIntro, 1.0f, false);
 }
-
 void ABattleZoneCpp::StartIntro()
 {
 	DefaultStageGamemode->PreBattleIntro();
@@ -40,7 +38,9 @@ void ABattleZoneCpp::OnHitBoxOverlay(UPrimitiveComponent* OverlappedComponent, A
 {
 	ABaseEnemyCpp* Enemy = Cast<ABaseEnemyCpp>(OtherActor);
 	if (Enemy != nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Detected: %s"), *OtherActor->GetName());
 		DefaultStageGamemode->AddEnemyToBattle(Enemy);
-	
+	}
 }
 

@@ -29,7 +29,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	float CalcClassAdvantage(EFgoClassType ClassOfAttacker);
-	float CalcCardAdvantage(ECardType ClassOfAttacker);
+	float CalcCardAdvantage(ECardType AttackerCardType);
 
 public:
 

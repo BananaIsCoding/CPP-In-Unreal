@@ -34,7 +34,8 @@ protected:
 		UnEngaged,
 		SettingUp,
 		InBattleTurn,
-		InCardTurn
+		InCardTurn,
+		EndingBattle
 	};
 
 	EBattleState CurrentBattleState = EBattleState::UnEngaged;
@@ -44,6 +45,10 @@ protected:
 	APlayerController* PlayerController;
 	ADefaultCharacter* FreeRoamCharacter;
 	UWorld* TheWorld;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USceneComponent> SceneComponent;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UAudioComponent> AudioComponent;
 	
 	FTransform EngagePos;
 	ABattleZoneCpp* BattleZoneBp;
@@ -63,6 +68,9 @@ protected:
 	TArray<int, TFixedAllocator<5>> CardPoolInUse;
 	int PlayerAttackCount;
 
+	FTimerHandle BattleModeTimerHandle;
+	
+
 	void CalcOffset(int ArrayLen);
 	FTransform GetSpawnPosition(FRotator Rotation, float XSpawnOffset, int Index);
 	void SetUpIntroCamera(FRotator Rotation, float XSpawnOffset, int Index);
@@ -78,6 +86,12 @@ protected:
 
 	void BattleTurn();
 	void CardTurnSetUp();
+
+	UFUNCTION()
+	void BattleFullyEnded();
+	UFUNCTION()
+	void DelayBeforeBattleTurn();
+	
 public:
 
 	UPROPERTY(BlueprintAssignable, BlueprintCallable)
@@ -119,12 +133,25 @@ public:
 	TSubclassOf<class UUserWidget> Wb_EnemySelectionMenuUI;
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	class UUserWidget* EnemySelectionMenu;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UUserWidget> Wb_StageCompleteUI;
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	class UUserWidget* StageCompleteMenu;
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UUserWidget> Wb_StageFailedUI;
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	class UUserWidget* StageFailedMenu;
 
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<class UTestHpWidget> Wb_MainHpBarUiCpp;
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	UTestHpWidget* CppMainHpBar;
 
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	TObjectPtr<USoundBase> RoamBgm;
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	TObjectPtr<USoundBase> BattleBgm;
+	
 	UFUNCTION(BlueprintImplementableEvent)
 	void SetReferenceAndCastUiInBP();
 	
@@ -160,4 +187,5 @@ public:
 	void OnEnemyDefeat(ABaseBattleEnemyCpp* DefeatedEnemy);
 	void OnCharacterDefeat(ADefaultPlayerBattleModeCpp* PlayerChar);
 	void EndBattleMode();
+	void OnBossDefeat();
 };
